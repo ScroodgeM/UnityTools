@@ -30,6 +30,7 @@ namespace UnityTools.Editor
 
         private static readonly string[] unityLibraries = new string[]
         {
+            "com.Scroodge.UnityTools.Runtime",
         };
 
         [MenuItem(nameof(UnityTools) + "/Generate UML with library references and open it in browser")]
