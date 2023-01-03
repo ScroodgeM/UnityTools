@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace UnityTools.Editor
+namespace UnityTools.Editor.ZeroReferenceFinder
 {
     public class SearchAssetsResults
     {

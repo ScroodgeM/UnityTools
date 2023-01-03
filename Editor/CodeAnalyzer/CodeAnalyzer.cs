@@ -7,7 +7,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityTools.Runtime.CodeAnalyzer;
 
-namespace UnityTools.Editor
+namespace UnityTools.Editor.CodeAnalyzer
 {
     public static class CodeAnalyzer
     {
