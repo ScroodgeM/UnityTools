@@ -1,0 +1,18 @@
+{
+    "name": "com.Scroodge.UnityTools.Editor",
+    "rootNamespace": "UnityTools",
+    "references": [
+        "com.Scroodge.UnityTools.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

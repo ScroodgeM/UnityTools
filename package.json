@@ -1,0 +1,7 @@
+{
+    "name": "com.scroodge.unitytools",
+    "displayName": "Scroodge's Unity Tools",
+    "description": "Set of useful project-independent Unity Tools",
+    "version": "1.0.0",
+    "unity": "2019.1"
+}
