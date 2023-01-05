@@ -24,9 +24,7 @@ namespace UnityTools.Editor
             public bool noEngineReferences;
         }
 
-        private static readonly string[] sharedLibraries = new string[]
-        {
-        };
+        private static string[] sharedLibraries;
 
         private static readonly string[] unityLibraries = new string[]
         {
@@ -47,6 +45,8 @@ namespace UnityTools.Editor
         [MenuItem(nameof(UnityTools) + "/Generate UML with library references")]
         private static void GenerateUML()
         {
+            FillSharedLibraries();
+
             string umlDocument = "";
 
             umlDocument += "@startuml" + Environment.NewLine;
@@ -77,6 +77,21 @@ namespace UnityTools.Editor
             UnityEngine.Debug.Log("Generation success");
         }
 
+        private static void FillSharedLibraries()
+        {
+            string pathToSharedLibrariesList = Path.Combine(Application.dataPath, "shared_libraries.txt");
+
+            if (File.Exists(pathToSharedLibrariesList) == true)
+            {
+                sharedLibraries = File.ReadAllLines(pathToSharedLibrariesList);
+            }
+            else
+            {
+                File.WriteAllText(pathToSharedLibrariesList, string.Empty);
+                sharedLibraries = new string[0];
+            }
+        }
+
         private static void ParseDirectory(string directoryPath, ref List<AsmDefStructure> asmDefs)
         {
             foreach (string filePath in Directory.GetFiles(directoryPath))
@@ -98,6 +113,8 @@ namespace UnityTools.Editor
             foreach (AsmDefStructure asmDef in asmDefs)
             {
                 umlDocument += $"class {asmDef.name} {GetLibraryColor(asmDef)} {{{Environment.NewLine}";
+
+                umlDocument += GetLibraryBody(asmDef) + Environment.NewLine;
 
                 umlDocument += "}" + Environment.NewLine;
 
@@ -126,6 +143,18 @@ namespace UnityTools.Editor
             }
 
             return LibraryType.Project;
+        }
+
+        private static string GetLibraryBody(AsmDefStructure library)
+        {
+            string result = library.noEngineReferences ? "no Unity" : "uses Unity";
+
+            if (GetLibraryType(library.name) == LibraryType.Shared)
+            {
+                result += ", Shared";
+            }
+
+            return result;
         }
 
         private static string GetLibraryColor(AsmDefStructure library)
