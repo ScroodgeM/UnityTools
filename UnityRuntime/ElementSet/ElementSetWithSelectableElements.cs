@@ -1,0 +1,41 @@
+﻿
+using UnityEngine;
+
+namespace UnityTools.UnityRuntime.ElementSet
+{
+    public class ElementSetWithSelectableElements<T> : ElementSet<T> where T : MonoBehaviour, ISelectableElement
+    {
+        public T SelectedElement
+        {
+            get
+            {
+                foreach (T element in ActiveElements)
+                {
+                    if (element.IsSelected)
+                    {
+                        return element;
+                    }
+                }
+
+                return null;
+            }
+        }
+
+        public ElementSetWithSelectableElements(ElementSet wrapper, T elementPrefab) : base(wrapper, elementPrefab)
+        {
+        }
+
+        public void SetSingleSelected(int selectedElementIndex)
+        {
+            SetSingleSelected(GetElement(selectedElementIndex));
+        }
+
+        public void SetSingleSelected(ISelectableElement selectedElement)
+        {
+            foreach (T element in ActiveElements)
+            {
+                element.SetSelected(element == selectedElement);
+            }
+        }
+    }
+}
