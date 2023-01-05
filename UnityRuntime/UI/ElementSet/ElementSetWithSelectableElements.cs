@@ -1,9 +1,9 @@
 ﻿
-using UnityEngine;
+using UnityTools.UnityRuntime.UI.Element;
 
 namespace UnityTools.UnityRuntime.UI.ElementSet
 {
-    public class ElementSetWithSelectableElements<T> : ElementSet<T> where T : MonoBehaviour, ISelectableElement
+    public class ElementSetWithSelectableElements<T> : ElementSet<T> where T : ElementBase, ISelectableElement
     {
         public T SelectedElement
         {

@@ -2,47 +2,49 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityTools.UnityRuntime.UI.Element;
 
 namespace UnityTools.UnityRuntime.UI.ElementSet
 {
     public class ElementSet : MonoBehaviour
     {
-        [SerializeField] private MonoBehaviour element;
+        [SerializeField] private ElementBase element;
 
-        public ElementSet<T> Typed<T>() where T : MonoBehaviour
+        public ElementSet<T> Typed<T>() where T : ElementBase
         {
-            if (element == null)
+            if (ValidateType<T>() == false)
             {
-                Debug.LogError($"ElementSet {gameObject.name} can't init without starting element set", gameObject);
                 return default;
             }
-            else if (element is T)
-            {
-                return new ElementSet<T>(this, element as T);
-            }
-            else
-            {
-                Debug.LogError($"ElementSet {gameObject.name} can't init with incorrect element type", gameObject);
-                return default;
-            }
+
+            return new ElementSet<T>(this, element as T);
         }
 
-        public ElementSetWithSelectableElements<T> TypedWithSelectableElements<T>() where T : MonoBehaviour, ISelectableElement
+        public ElementSetWithSelectableElements<T> TypedWithSelectableElements<T>() where T : ElementBase, ISelectableElement
+        {
+            if (ValidateType<T>() == false)
+            {
+                return default;
+            }
+
+            return new ElementSetWithSelectableElements<T>(this, element as T);
+        }
+
+        private bool ValidateType<T>()
         {
             if (element == null)
             {
                 Debug.LogError($"ElementSet {gameObject.name} can't init without starting element set", gameObject);
-                return default;
+                return false;
             }
-            else if (element is T)
-            {
-                return new ElementSetWithSelectableElements<T>(this, element as T);
-            }
-            else
+
+            if ((element is T) == false)
             {
                 Debug.LogError($"ElementSet {gameObject.name} can't init with incorrect element type", gameObject);
-                return default;
+                return false;
             }
+
+            return true;
         }
 
 #if UNITY_EDITOR
@@ -61,7 +63,7 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
 #endif
     }
 
-    public class ElementSet<T> where T : MonoBehaviour
+    public class ElementSet<T> where T : ElementBase
     {
         private readonly T elementPrefab;
         private readonly Transform elementsHolder;
@@ -94,7 +96,7 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
             elementsHolder.GetComponentsInChildren(true, elementsList);
         }
 
-        public void Init(int count, Action<T, int> initializer)
+        public void Init(int count, Action<T, int> initializer = null)
         {
             for (int i = elementsList.Count; i < count; i++)
             {
@@ -103,7 +105,7 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
 
             for (int i = 0; i < count; i++)
             {
-                elementsList[i].gameObject.SetActive(true);
+                elementsList[i].SetVisible(true);
 
                 if (initializer != null)
                 {
@@ -113,13 +115,13 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
 
             for (int i = count; i < elementsList.Count; i++)
             {
-                elementsList[i].gameObject.SetActive(false);
+                elementsList[i].SetVisible(false);
             }
         }
 
         public void Clear()
         {
-            Init(0, null);
+            Init(0);
         }
 
         public T GetElement(int index)
@@ -131,18 +133,14 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
         {
             foreach (T element in elementsList)
             {
-                if (element.gameObject.activeSelf)
-                {
-                    element.transform.SetAsLastSibling();
-                }
+                element.transform.SetAsLastSibling();
             }
         }
 
         private void AddNew()
         {
-            T element = UnityEngine.Object.Instantiate(elementPrefab, elementsHolder, false) as T;
+            T element = UnityEngine.Object.Instantiate(elementPrefab, elementsHolder, false);
             element.gameObject.hideFlags = HideFlags.DontSave;
-            element.gameObject.SetActive(false);
             elementsList.Add(element);
         }
     }
