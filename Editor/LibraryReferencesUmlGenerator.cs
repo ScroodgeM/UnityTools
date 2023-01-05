@@ -30,7 +30,9 @@ namespace UnityTools.Editor
 
         private static readonly string[] unityLibraries = new string[]
         {
+            "com.Scroodge.UnityTools.Editor",
             "com.Scroodge.UnityTools.Runtime",
+            "com.Scroodge.UnityTools.UnityRuntime",
             "Unity.TextMeshPro",
         };
 
