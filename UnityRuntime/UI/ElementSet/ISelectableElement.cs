@@ -1,5 +1,5 @@
 ﻿
-namespace UnityTools.UnityRuntime.ElementSet
+namespace UnityTools.UnityRuntime.UI.ElementSet
 {
     public interface ISelectableElement
     {
