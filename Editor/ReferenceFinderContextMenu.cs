@@ -30,13 +30,13 @@ namespace UnityTools.Editor
 
             foreach (Object unityObject in objects)
             {
-                Check(unityObject, includeIndirectDependants, deleteIfNoDependants);
+                CheckObject(unityObject, includeIndirectDependants, deleteIfNoDependants);
             }
 
             EditorUtility.ClearProgressBar();
         }
 
-        private static void Check(Object unityObject, bool includeIndirectDependants, bool deleteIfNoDependants)
+        private static void CheckObject(Object unityObject, bool includeIndirectDependants, bool deleteIfNoDependants)
         {
             if (unityObject is GameObject)
             {
@@ -51,52 +51,51 @@ namespace UnityTools.Editor
 
             string myPath = AssetDatabase.GetAssetPath(unityObject);
 
+            System.DateTime startTime = System.DateTime.UtcNow;
+
+            AnalyzeDependencies(includeIndirectDependants, myPath, out bool someDependencyFound, out bool stopSignal);
+
+            if (stopSignal == false)
+            {
+                System.TimeSpan searchTime = System.DateTime.UtcNow - startTime;
+                Debug.Log($"{pre}done in {searchTime.TotalSeconds} seconds!{post}");
+
+                if (someDependencyFound == false && deleteIfNoDependants == true)
+                {
+                    AssetDatabase.DeleteAsset(myPath);
+                    AssetDatabase.Refresh();
+                }
+            }
+        }
+
+        private static void AnalyzeDependencies(bool includeIndirectDependants, string myPath, out bool someDependencyFound, out bool stopSignal)
+        {
             string[] allGuids = AssetDatabase.FindAssets("");
 
             Debug.Log($"{pre}stating search for dependants of {myPath} in {allGuids.Length} assets{post}");
 
-            System.DateTime startTime = System.DateTime.UtcNow;
+            stopSignal = false;
+            someDependencyFound = false;
 
-            bool someDependencyFound = false;
-
-            for (int i = 0, maxi = allGuids.Length - 1; i <= maxi; i++)
+            for (int i = 0, maxi = allGuids.Length - 1; i <= maxi && stopSignal == false; i++)
             {
                 string candidatePath = AssetDatabase.GUIDToAssetPath(allGuids[i]);
 
                 if (candidatePath == myPath) { continue; }
 
-                Object candidate = AssetDatabase.LoadAssetAtPath(candidatePath, typeof(Object));
-
                 bool directDependencyFound = false;
 
                 // search only direct dependency
-                foreach (string dependency in AssetDatabase.GetDependencies(candidatePath, false))
+                if (HasDirectDependency(myPath, candidatePath) == true)
                 {
-                    if (dependency == myPath)
-                    {
-                        LogDependency(true);
-                        directDependencyFound = true;
-                        break;
-                    }
+                    LogDependency(candidatePath, true);
+                    directDependencyFound = true;
+                    someDependencyFound = true;
                 }
 
-                if (directDependencyFound == false && includeIndirectDependants == true)
+                if (directDependencyFound == false && includeIndirectDependants == true && HasIndirectDependency(myPath, candidatePath) == true)
                 {
-                    // search all other dependencies (incl. non-direct)
-                    foreach (string dependency in AssetDatabase.GetDependencies(candidatePath, true))
-                    {
-                        if (dependency == myPath)
-                        {
-                            LogDependency(false);
-                            break;
-                        }
-                    }
-                }
-
-                void LogDependency(bool directDependency)
-                {
-                    string type = directDependency ? "direct" : "indirect";
-                    Debug.Log($"{pre}[{type}] {candidatePath}{post}", candidate);
+                    LogDependency(candidatePath, false);
                     someDependencyFound = true;
                 }
 
@@ -105,23 +104,34 @@ namespace UnityTools.Editor
                     if (EditorUtility.DisplayCancelableProgressBar($"Searching dependants of {myPath}...", $"{i}/{allGuids.Length}", (float)i / maxi) == true)
                     {
                         Debug.LogError("search cancelled by user");
-                        break;
+                        stopSignal = true;
                     }
                 }
+            }
+        }
 
-                if (i == maxi)
+        private static bool HasDirectDependency(string asset, string dependant) => HasDependency(asset, dependant, false);
+
+        private static bool HasIndirectDependency(string asset, string dependant) => HasDependency(asset, dependant, true);
+
+        private static bool HasDependency(string asset, string dependant, bool recursive)
+        {
+            foreach (string dependency in AssetDatabase.GetDependencies(dependant, recursive))
+            {
+                if (dependency == asset)
                 {
-                    System.TimeSpan searchTime = System.DateTime.UtcNow - startTime;
-
-                    Debug.Log($"{pre}done in {searchTime.TotalSeconds} seconds!{post}");
+                    return true;
                 }
             }
 
-            if (someDependencyFound == false && deleteIfNoDependants)
-            {
-                AssetDatabase.DeleteAsset(myPath);
-                AssetDatabase.Refresh();
-            }
+            return false;
+        }
+
+        private static void LogDependency(string candidatePath, bool directDependency)
+        {
+            Object candidate = AssetDatabase.LoadAssetAtPath(candidatePath, typeof(Object));
+            string type = directDependency ? "direct" : "indirect";
+            Debug.Log($"{pre}[{type}] {candidatePath}{post}", candidate);
         }
     }
 }

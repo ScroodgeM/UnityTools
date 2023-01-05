@@ -31,6 +31,7 @@ namespace UnityTools.Runtime.Promises
                     DoneCallbacks.Add(callback);
                     break;
             }
+
             return this;
         }
 
@@ -45,6 +46,7 @@ namespace UnityTools.Runtime.Promises
                     FailCallbacks.Add(callback);
                     break;
             }
+
             return this;
         }
 

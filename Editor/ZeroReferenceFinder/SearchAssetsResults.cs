@@ -48,79 +48,92 @@ namespace UnityTools.Editor.ZeroReferenceFinder
         {
             if (searchResults != null)
             {
-                GUILayout.Label(header);
-                GUILayout.Label("total results: " + searchResults.Count);
+                DrawHeader();
+                DrawGroups();
+                DrawAssets();
+            }
+        }
 
-                if (showDeleteButton == true)
-                {
-                    GUI.color = Color.red;
-                    if (GUILayout.Button("DELETE ALL ASSETS LISTED BELOW") == true)
-                    {
-                        foreach (KeyValuePair<string, List<string>> extension in searchResults)
-                        {
-                            foreach (string assetPath in extension.Value)
-                            {
-                                AssetDatabase.DeleteAsset(assetPath);
-                            }
-                        }
-                        searchResults.Clear();
-                    }
-                    GUI.color = Color.white;
-                }
+        private void DrawHeader()
+        {
+            GUILayout.Label(header);
+            GUILayout.Label("total results: " + searchResults.Count);
 
-                GUILayout.Space(10f);
-
-                int counter = 0;
-                const int columns = 5;
-                EditorGUILayout.BeginHorizontal();
+            if (showDeleteButton == true)
+            {
+                GUI.color = Color.red;
+                if (GUILayout.Button("DELETE ALL ASSETS LISTED BELOW") == true)
                 {
                     foreach (KeyValuePair<string, List<string>> extension in searchResults)
                     {
-                        GUI.color = filter == extension.Key ? Color.green : Color.white;
-                        if (GUILayout.Button($"{extension.Key} [{extension.Value.Count}]", GUILayout.Width(100f)))
+                        foreach (string assetPath in extension.Value)
                         {
-                            filter = extension.Key;
-                        }
-
-                        if (GUILayout.Button("X", GUILayout.Width(20f)))
-                        {
-                            searchResults.Remove(extension.Key);
-                            break;
-                        }
-
-                        counter++;
-                        if (counter % columns == 0)
-                        {
-                            // new line
-                            EditorGUILayout.EndHorizontal();
-                            EditorGUILayout.BeginHorizontal();
+                            AssetDatabase.DeleteAsset(assetPath);
                         }
                     }
-                    GUI.color = Color.white;
+                    searchResults.Clear();
                 }
-                EditorGUILayout.EndHorizontal();
+                GUI.color = Color.white;
+            }
+        }
 
-                if (string.IsNullOrEmpty(filter) == false && searchResults.ContainsKey(filter) == true)
+        private void DrawGroups()
+        {
+            GUILayout.Space(10f);
+
+            int counter = 0;
+            const int columns = 5;
+            EditorGUILayout.BeginHorizontal();
+            {
+                foreach (KeyValuePair<string, List<string>> extension in searchResults)
                 {
-                    GUILayout.Space(10f);
-
-                    foreach (string result in searchResults[filter])
+                    GUI.color = filter == extension.Key ? Color.green : Color.white;
+                    if (GUILayout.Button($"{extension.Key} [{extension.Value.Count}]", GUILayout.Width(100f)))
                     {
-                        EditorGUILayout.BeginHorizontal();
-                        if (GUILayout.Button(">>>", GUILayout.Width(40f)))
-                        {
-                            EditorGUIUtility.PingObject(AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(result));
-                        }
-                        if (GUILayout.Button("X", GUILayout.Width(40f)))
-                        {
-                            AssetDatabase.DeleteAsset(result);
-                            searchResults[filter].Remove(result);
-                            AssetDatabase.Refresh();
-                            break;
-                        }
-                        GUILayout.Label(result);
-                        EditorGUILayout.EndHorizontal();
+                        filter = extension.Key;
                     }
+
+                    if (GUILayout.Button("X", GUILayout.Width(20f)))
+                    {
+                        searchResults.Remove(extension.Key);
+                        break;
+                    }
+
+                    counter++;
+                    if (counter % columns == 0)
+                    {
+                        // new line
+                        EditorGUILayout.EndHorizontal();
+                        EditorGUILayout.BeginHorizontal();
+                    }
+                }
+                GUI.color = Color.white;
+            }
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private void DrawAssets()
+        {
+            if (string.IsNullOrEmpty(filter) == false && searchResults.ContainsKey(filter) == true)
+            {
+                GUILayout.Space(10f);
+
+                foreach (string result in searchResults[filter])
+                {
+                    EditorGUILayout.BeginHorizontal();
+                    if (GUILayout.Button(">>>", GUILayout.Width(40f)))
+                    {
+                        EditorGUIUtility.PingObject(AssetDatabase.LoadAssetAtPath<Object>(result));
+                    }
+                    if (GUILayout.Button("X", GUILayout.Width(40f)))
+                    {
+                        AssetDatabase.DeleteAsset(result);
+                        searchResults[filter].Remove(result);
+                        AssetDatabase.Refresh();
+                        break;
+                    }
+                    GUILayout.Label(result);
+                    EditorGUILayout.EndHorizontal();
                 }
             }
         }
