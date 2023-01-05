@@ -13,17 +13,25 @@ namespace UnityTools.Runtime.StatefulEvent
         {
             return new StatefulEventInt<string>(defaultValue, (a, b) => a == b);
         }
+        public static StatefulEventInt<sbyte> Create(sbyte defaultValue)
+        {
+            return new StatefulEventInt<sbyte>(defaultValue, (a, b) => a == b);
+        }
         public static StatefulEventInt<byte> Create(byte defaultValue)
         {
             return new StatefulEventInt<byte>(defaultValue, (a, b) => a == b);
         }
+        public static StatefulEventInt<short> Create(short defaultValue)
+        {
+            return new StatefulEventInt<short>(defaultValue, (a, b) => a == b);
+        }
+        public static StatefulEventInt<ushort> Create(ushort defaultValue)
+        {
+            return new StatefulEventInt<ushort>(defaultValue, (a, b) => a == b);
+        }
         public static StatefulEventInt<int> Create(int defaultValue)
         {
             return new StatefulEventInt<int>(defaultValue, (a, b) => a == b);
-        }
-        public static StatefulEventInt<float> Create(float defaultValue)
-        {
-            return new StatefulEventInt<float>(defaultValue, (a, b) => a == b);
         }
         public static StatefulEventInt<uint> Create(uint defaultValue)
         {
@@ -32,6 +40,18 @@ namespace UnityTools.Runtime.StatefulEvent
         public static StatefulEventInt<long> Create(long defaultValue)
         {
             return new StatefulEventInt<long>(defaultValue, (a, b) => a == b);
+        }
+        public static StatefulEventInt<ulong> Create(ulong defaultValue)
+        {
+            return new StatefulEventInt<ulong>(defaultValue, (a, b) => a == b);
+        }
+        public static StatefulEventInt<float> Create(float defaultValue)
+        {
+            return new StatefulEventInt<float>(defaultValue, (a, b) => a == b);
+        }
+        public static StatefulEventInt<double> Create(double defaultValue)
+        {
+            return new StatefulEventInt<double>(defaultValue, (a, b) => a == b);
         }
         public static StatefulEventInt<T> CreateEnum<T>(T defaultValue) where T : Enum
         {
