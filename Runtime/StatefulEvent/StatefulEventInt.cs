@@ -108,7 +108,7 @@ namespace UnityTools.Runtime.StatefulEvent
 
             if (valueChanged == true)
             {
-                OnValueChanged(currentValue);
+                OnValueChanged(newValue);
             }
         }
 
@@ -148,20 +148,24 @@ namespace UnityTools.Runtime.StatefulEvent
 
         public void SetValue1(in T1 newValue1)
         {
+            T2 oldValue2;
             lock (lockObject)
             {
                 value1.Set(newValue1);
+                oldValue2 = value2.Value;
             }
-            FireEventIfChanged();
+            FireEventIfChanged(newValue1, oldValue2);
         }
 
         public void SetValue2(in T2 newValue2)
         {
+            T1 oldValue1;
             lock (lockObject)
             {
+                oldValue1 = value1.Value;
                 value2.Set(newValue2);
             }
-            FireEventIfChanged();
+            FireEventIfChanged(oldValue1, newValue2);
         }
 
         public void SetValues(in T1 newValue1, in T2 newValue2)
@@ -171,10 +175,10 @@ namespace UnityTools.Runtime.StatefulEvent
                 value1.Set(newValue1);
                 value2.Set(newValue2);
             }
-            FireEventIfChanged();
+            FireEventIfChanged(newValue1, newValue2);
         }
 
-        private void FireEventIfChanged()
+        private void FireEventIfChanged(in T1 value1, in T2 value2)
         {
             bool someValueChanged;
 
@@ -186,7 +190,7 @@ namespace UnityTools.Runtime.StatefulEvent
 
             if (someValueChanged == true)
             {
-                OnValueChanged(value1.Value, value2.Value);
+                OnValueChanged(value1, value2);
             }
         }
 
