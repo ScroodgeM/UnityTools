@@ -1,9 +1,11 @@
 ﻿
+using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace UnityTools.UnityRuntime.UI
 {
+    [RequireComponent(typeof(CanvasRenderer))]
     public class NoGraphicsImage : MaskableGraphic, IEventSystemHandler
     {
         public override void SetMaterialDirty() { return; }
