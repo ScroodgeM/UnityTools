@@ -53,8 +53,11 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
             GameObject go = Instantiate(element, transform).gameObject;
             foreach (MonoBehaviour scriptComponent in go.GetComponentsInChildren<MonoBehaviour>())
             {
-                //So the user's Awake() won't be called
-                scriptComponent.enabled = false;
+                if (scriptComponent is UnityEngine.UI.Graphic == false)
+                {
+                    //So the user's Awake() won't be called
+                    scriptComponent.enabled = false;
+                }
             }
             go.hideFlags = HideFlags.DontSave;
             go.SetActive(true);
