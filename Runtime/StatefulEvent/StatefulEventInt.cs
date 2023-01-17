@@ -80,6 +80,7 @@ namespace UnityTools.Runtime.StatefulEvent
                 }
             }
         }
+        public event Action<T, T> OnValueChangedFromTo = (f, t) => { };
 
         private object lockObject = new();
         private readonly T defaultValue;
@@ -95,12 +96,14 @@ namespace UnityTools.Runtime.StatefulEvent
 
         public void Set(in T newValue)
         {
+            T oldValue = default;
             bool valueChanged = false;
 
             lock (lockObject)
             {
                 if (equator(currentValue, newValue) == false)
                 {
+                    oldValue = currentValue;
                     currentValue = newValue;
                     valueChanged = true;
                 }
@@ -109,6 +112,7 @@ namespace UnityTools.Runtime.StatefulEvent
             if (valueChanged == true)
             {
                 OnValueChanged(newValue);
+                OnValueChangedFromTo(oldValue, newValue);
             }
         }
 
@@ -125,6 +129,7 @@ namespace UnityTools.Runtime.StatefulEvent
             {
                 currentValue = defaultValue;
             }
+            OnValueChangedFromTo = (f, t) => { };
         }
     }
 

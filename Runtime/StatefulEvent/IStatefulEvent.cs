@@ -6,6 +6,7 @@ namespace UnityTools.Runtime.StatefulEvent
     public interface IStatefulEvent<T>
     {
         event Action<T> OnValueChanged;
+        event Action<T, T> OnValueChangedFromTo;
         T Value { get; }
     }
 
