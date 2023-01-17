@@ -6,11 +6,11 @@ namespace UnityTools.UnityRuntime.StatefulEvent
 {
     public static class StatefulEventForUnity
     {
-        public static StatefulEventInt<Vector2Int> Create(Vector2 defaultValue)
+        public static StatefulEventInt<Vector2Int> Create(Vector2Int defaultValue)
         {
             return new StatefulEventInt<Vector2Int>(defaultValue, (a, b) => a == b);
         }
-        public static StatefulEventInt<Vector3Int> Create(Vector3 defaultValue)
+        public static StatefulEventInt<Vector3Int> Create(Vector3Int defaultValue)
         {
             return new StatefulEventInt<Vector3Int>(defaultValue, (a, b) => a == b);
         }
