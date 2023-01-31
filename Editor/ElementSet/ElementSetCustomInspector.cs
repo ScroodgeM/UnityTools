@@ -1,11 +1,10 @@
 ﻿
 using UnityEditor;
 using UnityEngine;
-using UnityTools.UnityRuntime.UI.ElementSet;
 
-namespace UnityTools.Editor
+namespace UnityTools.Editor.ElementSet
 {
-    [CustomEditor(typeof(ElementSet))]
+    [CustomEditor(typeof(UnityRuntime.UI.ElementSet.ElementSet))]
     [CanEditMultipleObjects]
     public class ElementSetCustomInspector : UnityEditor.Editor
     {
@@ -15,7 +14,7 @@ namespace UnityTools.Editor
 
             if (GUILayout.Button("Generate editor element"))
             {
-                (target as ElementSet).GenerateTestElement();
+                (target as UnityRuntime.UI.ElementSet.ElementSet).GenerateTestElement();
             }
         }
     }
