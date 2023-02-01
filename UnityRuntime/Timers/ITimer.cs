@@ -1,4 +1,3 @@
-﻿
 using System;
 using UnityTools.Runtime.Promises;
 

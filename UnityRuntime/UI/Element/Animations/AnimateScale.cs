@@ -1,4 +1,3 @@
-﻿
 using UnityEngine;
 
 namespace UnityTools.UnityRuntime.UI.Element.Animations

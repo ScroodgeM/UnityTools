@@ -1,4 +1,3 @@
-﻿
 using UnityTools.UnityRuntime.UI.Element;
 
 namespace UnityTools.UnityRuntime.UI.ElementSet

@@ -1,4 +1,3 @@
-﻿
 namespace UnityTools.UnityRuntime.UI.ElementSet
 {
     public interface ISelectableElement

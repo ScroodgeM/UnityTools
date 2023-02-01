@@ -1,8 +1,8 @@
-﻿
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using UnityEditor;
 using UnityEngine;
 using UnityTools.Runtime.CodeAnalyzer;
@@ -60,7 +60,7 @@ namespace UnityTools.Editor.CodeAnalyzer
                 if (folder == scriptsFolder)
                 {
                     AnalyzeCSharpFile(filePath, ref lines, ref switchConditions, ref methodTooLongMessages);
-                    File.WriteAllLines(filePath, lines, System.Text.Encoding.UTF8);
+                    File.WriteAllLines(filePath, lines, new UTF8Encoding(false));
                 }
 
                 WriteStatistic(ref statisticPerFolder, rootFolder, lines.Length);
@@ -77,7 +77,7 @@ namespace UnityTools.Editor.CodeAnalyzer
         private static void AnalyzeCSharpFile(string filePath, ref string[] lines, ref Dictionary<string, List<string>> switchConditions, ref List<(uint, Action)> methodTooLongMessages)
         {
             RemoveEmptyDoubleLines(ref lines);
-            MakeSureWeHaveFirstLineEmpty(ref lines);
+            RemoveEmptyLinesAtTheBegin(ref lines);
             RemoveEmptyLinesAtTheEnd(ref lines);
             RemoveTrailingSpaces(ref lines);
             AnalyzeToDo(filePath, ref lines);
@@ -102,11 +102,11 @@ namespace UnityTools.Editor.CodeAnalyzer
             }
         }
 
-        private static void MakeSureWeHaveFirstLineEmpty(ref string[] lines)
+        private static void RemoveEmptyLinesAtTheBegin(ref string[] lines)
         {
-            if (string.IsNullOrEmpty(lines[0]) == false)
+            while (lines.Length > 0 && string.IsNullOrEmpty(lines[0]) == true)
             {
-                ArrayUtility.Insert(ref lines, 0, "");
+                ArrayUtility.RemoveAt(ref lines, 0);
             }
         }
 
@@ -162,7 +162,7 @@ namespace UnityTools.Editor.CodeAnalyzer
                 {
                     lines[i] = $"namespace {expectedNamespace}";
                     matchCounter++;
-                    if (i == 0 || string.IsNullOrEmpty(lines[i - 1]) == false)
+                    if (i > 0 && string.IsNullOrEmpty(lines[i - 1]) == false)
                     {
                         ArrayUtility.Insert(ref lines, i, "");
                         i++;

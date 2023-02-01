@@ -1,4 +1,3 @@
-﻿
 using UnityEngine;
 using UnityTools.Runtime.Promises;
 using UnityTools.UnityRuntime.Timers;
