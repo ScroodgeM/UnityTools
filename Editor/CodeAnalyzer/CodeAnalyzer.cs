@@ -1,3 +1,4 @@
+﻿//this empty line for UTF-8 BOM header
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -19,6 +20,7 @@ namespace UnityTools.Editor.CodeAnalyzer
         private const string colorend = "</color>";
         private const int methodParametersCountLimit = 2;
         private const int methodOutParametersCountLimit = 1;
+        private const string bomPlaceholderLine = "//this empty line for UTF-8 BOM header";
 
         private static string rootNamespace => EditorSettings.projectGenerationRootNamespace;
 
@@ -38,6 +40,7 @@ namespace UnityTools.Editor.CodeAnalyzer
         {
             public int LinesCount { get; private set; }
             public int FilesCount { get; private set; }
+
             public void AddFile(int linesCount)
             {
                 FilesCount++;
@@ -79,6 +82,7 @@ namespace UnityTools.Editor.CodeAnalyzer
             RemoveEmptyDoubleLines(ref lines);
             RemoveEmptyLinesAtTheBegin(ref lines);
             RemoveEmptyLinesAtTheEnd(ref lines);
+            MakeSureWeHaveBomPlaceholderLineAtTheBegin(ref lines);
             RemoveTrailingSpaces(ref lines);
             AnalyzeToDo(filePath, ref lines);
             AnalyzeNotImplemented(filePath, ref lines);
@@ -115,6 +119,14 @@ namespace UnityTools.Editor.CodeAnalyzer
             while (lines.Length > 0 && string.IsNullOrEmpty(lines[lines.Length - 1]) == true)
             {
                 ArrayUtility.RemoveAt(ref lines, lines.Length - 1);
+            }
+        }
+
+        private static void MakeSureWeHaveBomPlaceholderLineAtTheBegin(ref string[] lines)
+        {
+            if (lines.Length > 0 && lines[0] != bomPlaceholderLine)
+            {
+                ArrayUtility.Insert(ref lines, 0, bomPlaceholderLine);
             }
         }
 
@@ -169,6 +181,7 @@ namespace UnityTools.Editor.CodeAnalyzer
                     }
                 }
             }
+
             if (matchCounter != 1)
             {
                 string msg = $"namespace missing ({expectedNamespace})";
@@ -196,6 +209,7 @@ namespace UnityTools.Editor.CodeAnalyzer
                             perLevelStartLineNumber.Push(lineCounter + 1);
                         }
                     }
+
                     if (line[0] == '}')
                     {
                         if (depthLevel == methodBodyDepthLevel)
@@ -313,6 +327,7 @@ namespace UnityTools.Editor.CodeAnalyzer
                                     outParametersCount++;
                                 }
                             }
+
                             if (outParametersCount > methodOutParametersCountLimit)
                             {
                                 string message = $"recommended: {methodOutParametersCountLimit}, actual: {outParametersCount}";
@@ -369,6 +384,7 @@ namespace UnityTools.Editor.CodeAnalyzer
                     yield return file;
                 }
             }
+
             foreach (string folder in Directory.GetDirectories(rootFolder))
             {
                 foreach (string file in GetAllCSharpFiles(folder))
@@ -398,6 +414,7 @@ namespace UnityTools.Editor.CodeAnalyzer
         }
 
         private static readonly char[] pathSeparators = new char[] { Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar };
+
         private static string GetFolderFromPath(string filePath, int folderLevel)
         {
             string[] path = Path.GetDirectoryName(filePath).Split(pathSeparators);
@@ -405,6 +422,7 @@ namespace UnityTools.Editor.CodeAnalyzer
             {
                 return path[folderLevel];
             }
+
             return string.Empty;
         }
     }

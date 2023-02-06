@@ -1,3 +1,4 @@
+﻿//this empty line for UTF-8 BOM header
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
