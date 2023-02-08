@@ -1,4 +1,5 @@
 ﻿//this empty line for UTF-8 BOM header
+
 using System;
 using UnityEngine;
 using UnityEditor;
@@ -12,6 +13,7 @@ namespace UnityTools.Editor
     {
         private enum LibraryType : byte
         {
+            Myself = 3,
             Shared = 10,
             Project = 20,
         }
@@ -21,17 +23,17 @@ namespace UnityTools.Editor
         {
             public string name;
             public string[] references;
+            public bool autoReferenced;
             public bool noEngineReferences;
         }
 
         private static string[] sharedLibraries;
 
-        private static readonly string[] unityLibraries = new string[]
+        private static readonly string[] myLibraries = new string[]
         {
             "com.Scroodge.UnityTools.Editor",
             "com.Scroodge.UnityTools.Runtime",
             "com.Scroodge.UnityTools.UnityRuntime",
-            "Unity.TextMeshPro",
         };
 
         [MenuItem(nameof(UnityTools) + "/Generate UML with library references and open it in browser")]
@@ -60,13 +62,6 @@ namespace UnityTools.Editor
             ParseDirectory(Application.dataPath, ref asmDefs);
 
             CreateUml(asmDefs, ref umlDocument);
-
-            umlDocument += Environment.NewLine;
-
-            foreach (string editorLibrary in unityLibraries)
-            {
-                umlDocument += $"remove {editorLibrary}{Environment.NewLine}";
-            }
 
             umlDocument += Environment.NewLine;
 
@@ -137,6 +132,11 @@ namespace UnityTools.Editor
 
         private static LibraryType GetLibraryType(string libraryName)
         {
+            if (Array.Exists(myLibraries, x => x == libraryName))
+            {
+                return LibraryType.Myself;
+            }
+
             if (Array.Exists(sharedLibraries, x => x == libraryName))
             {
                 return LibraryType.Shared;
@@ -149,9 +149,23 @@ namespace UnityTools.Editor
         {
             string result = library.noEngineReferences ? "no Unity" : "uses Unity";
 
-            if (GetLibraryType(library.name) == LibraryType.Shared)
+            if (library.autoReferenced == true)
             {
-                result += ", Shared";
+                result += ", auto-referenced";                
+            }
+
+            switch (GetLibraryType(library.name))
+            {
+                case LibraryType.Myself:
+                    result += ", UnityTools";
+                    break;
+                
+                case LibraryType.Project:
+                    break;
+                
+                case LibraryType.Shared:
+                    result += ", Shared";
+                    break;
             }
 
             return result;
@@ -163,6 +177,7 @@ namespace UnityTools.Editor
 
             switch (GetLibraryType(library.name))
             {
+                case LibraryType.Myself: return $"#ad2fff/{secondColor}";
                 case LibraryType.Shared: return $"#adff2f/{secondColor}";
                 case LibraryType.Project: return $"#ffffff/{secondColor}";
                 default: return $"#808080/{secondColor}";
