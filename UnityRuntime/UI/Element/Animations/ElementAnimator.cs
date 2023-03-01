@@ -8,7 +8,7 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
 {
     public class ElementAnimator : MonoBehaviour
     {
-        private const float DEFAULT_ANIMATION_SPPED = 4f;
+        private const float DEFAULT_ANIMATION_DURATION = 0.3f;
 
         [SerializeField] private bool visibleByDefault = false;
 
@@ -19,15 +19,15 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
 
         private void Awake()
         {
-            ElementAnimatorCustomSpeed customSpeed = GetComponent<ElementAnimatorCustomSpeed>();
-
-            float animationSpeed = customSpeed == null ? DEFAULT_ANIMATION_SPPED : customSpeed.AnimationSpeed;
+            ElementAnimatorCustomDuration customDuration = GetComponent<ElementAnimatorCustomDuration>();
+            float showAnimationDuration = customDuration == null ? DEFAULT_ANIMATION_DURATION : customDuration.ShowAnimationDuration;
+            float hideAnimationDuration = customDuration == null ? DEFAULT_ANIMATION_DURATION : customDuration.HideAnimationDuration;
 
             GetComponents(animations);
 
             foreach (AnimationBase animation in animations)
             {
-                animation.Init(visibleByDefault, animationSpeed);
+                animation.Init(visibleByDefault, showAnimationDuration, hideAnimationDuration);
             }
 
             lastStateIsVisible = visibleByDefault;

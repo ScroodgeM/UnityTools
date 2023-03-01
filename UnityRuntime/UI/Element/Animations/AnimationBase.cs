@@ -10,11 +10,13 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
     {
         private bool lastVisible;
         private IPromise lastAnimation;
-        private float animationDuration;
+        private float showAnimationDuration;
+        private float hideAnimationDuration;
 
-        public void Init(bool visible, float animationSpeed)
+        public void Init(bool visible, float showAnimationDuration, float hideAnimationDuration)
         {
-            animationDuration = 1f / animationSpeed;
+            this.showAnimationDuration = showAnimationDuration;
+            this.hideAnimationDuration = hideAnimationDuration;
 
             lastVisible = visible;
             lastAnimation = Deferred.Resolved();
@@ -35,7 +37,9 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
 
         private IPromise StartAnimation(bool newVisilbeState)
         {
-            return Timer.Instance.WaitUnscaled(animationDuration,
+            float duration = newVisilbeState ? showAnimationDuration : hideAnimationDuration;
+
+            return Timer.Instance.WaitUnscaled(duration,
                 progress =>
                 {
                     if (this != null)

@@ -151,7 +151,7 @@ namespace UnityTools.Editor
 
             if (library.autoReferenced == true)
             {
-                result += ", auto-referenced";                
+                result += ", auto-referenced";
             }
 
             switch (GetLibraryType(library.name))
@@ -159,10 +159,10 @@ namespace UnityTools.Editor
                 case LibraryType.Myself:
                     result += ", UnityTools";
                     break;
-                
+
                 case LibraryType.Project:
                     break;
-                
+
                 case LibraryType.Shared:
                     result += ", Shared";
                     break;
