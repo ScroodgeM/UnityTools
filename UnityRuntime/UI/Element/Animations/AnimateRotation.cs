@@ -5,6 +5,7 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
 {
     public class AnimateRotation : AnimationBase
     {
+        [SerializeField] private RectTransform customAnimatedTransform;
         [SerializeField] private Vector3 rotationHidden;
         [SerializeField] private Vector3 rotationVisible;
         [SerializeField] private bool canBeDisabledWhenInvisible = true;
@@ -15,7 +16,7 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
 
         protected override void Init()
         {
-            this.rectTransform = GetComponent<RectTransform>();
+            this.rectTransform = customAnimatedTransform != null ? customAnimatedTransform : GetComponent<RectTransform>();
             quaternionHidden = Quaternion.Euler(rotationHidden);
             quaternionVisible = Quaternion.Euler(rotationVisible);
         }

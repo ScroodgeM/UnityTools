@@ -6,6 +6,7 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
 {
     public class AnimateSize : AnimationBase
     {
+        [SerializeField] private RectTransform customAnimatedTransform;
         [SerializeField] private Vector2 sizeVisible;
         [SerializeField] private Vector2 sizeHidden;
         [SerializeField] private bool canBeDisabledWhenInvisible = true;
@@ -14,7 +15,7 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
 
         protected override void Init()
         {
-            this.rectTransform = GetComponent<RectTransform>();
+            this.rectTransform = customAnimatedTransform != null ? customAnimatedTransform : GetComponent<RectTransform>();
         }
 
         internal override bool CanBeDisabledWhenInvisible => canBeDisabledWhenInvisible;
