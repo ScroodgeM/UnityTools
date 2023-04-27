@@ -1,4 +1,5 @@
 ﻿//this empty line for UTF-8 BOM header
+
 using UnityEngine;
 using UnityTools.Runtime.Promises;
 using UnityTools.UnityRuntime.Timers;
@@ -35,16 +36,16 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
             return lastAnimation;
         }
 
-        private IPromise StartAnimation(bool newVisilbeState)
+        private IPromise StartAnimation(bool newVisibleState)
         {
-            float duration = newVisilbeState ? showAnimationDuration : hideAnimationDuration;
+            float duration = newVisibleState ? showAnimationDuration : hideAnimationDuration;
 
             return Timer.Instance.WaitUnscaled(duration,
                 progress =>
                 {
                     if (this != null)
                     {
-                        if (newVisilbeState == true)
+                        if (newVisibleState == true)
                         {
                             ApplyVisibility(progress);
                         }
