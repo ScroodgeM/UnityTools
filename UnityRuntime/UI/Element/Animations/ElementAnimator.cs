@@ -1,4 +1,5 @@
 ﻿//this empty line for UTF-8 BOM header
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -15,6 +16,7 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
         private readonly List<AnimationBase> animations = new List<AnimationBase>();
         private readonly List<IPromise> cache = new List<IPromise>();
 
+        private byte lastStateCounter;
         private bool lastStateIsVisible;
 
         private void Awake()
@@ -30,6 +32,7 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
                 animation.Init(visibleByDefault, showAnimationDuration, hideAnimationDuration);
             }
 
+            lastStateCounter = 0;
             lastStateIsVisible = visibleByDefault;
 
             TryDisableWhenInvisible();
@@ -51,6 +54,11 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
                 cache.Add(animation.SetVisible(visible));
             }
 
+            unchecked
+            {
+                lastStateCounter++;
+            }
+
             lastStateIsVisible = visible;
 
             return Deferred.All(cache).Done(() =>
@@ -63,6 +71,8 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
         {
             if (lastStateIsVisible == false)
             {
+                byte myStateCounter = lastStateCounter;
+
                 if (gameObject.activeInHierarchy == true)
                 {
                     StartCoroutine(WaitAndDoAction());
@@ -76,7 +86,7 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
                 {
                     yield return null;
 
-                    if (lastStateIsVisible == false)
+                    if (myStateCounter == lastStateCounter)
                     {
                         DoAction();
                     }
