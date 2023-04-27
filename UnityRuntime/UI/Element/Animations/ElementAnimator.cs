@@ -15,7 +15,7 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
         private readonly List<AnimationBase> animations = new List<AnimationBase>();
         private readonly List<IPromise> cache = new List<IPromise>();
 
-        internal bool lastStateIsVisible;
+        private bool lastStateIsVisible;
 
         private void Awake()
         {
