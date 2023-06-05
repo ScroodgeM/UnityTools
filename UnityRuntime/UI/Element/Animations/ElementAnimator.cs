@@ -38,7 +38,7 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
             TryDisableWhenInvisible();
         }
 
-        public IPromise SetVisible(bool visible)
+        internal IPromise SetVisible(bool visible)
         {
             gameObject.SetActive(true);
 
