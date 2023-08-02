@@ -1,4 +1,5 @@
 ﻿//this empty line for UTF-8 BOM header
+
 using System;
 
 namespace UnityTools.Runtime.StatefulEvent
@@ -9,58 +10,72 @@ namespace UnityTools.Runtime.StatefulEvent
         {
             return new StatefulEventInt<bool>(defaultValue, (a, b) => a == b);
         }
+
         public static StatefulEventInt<string> Create(string defaultValue)
         {
             return new StatefulEventInt<string>(defaultValue, (a, b) => a == b);
         }
+
         public static StatefulEventInt<sbyte> Create(sbyte defaultValue)
         {
             return new StatefulEventInt<sbyte>(defaultValue, (a, b) => a == b);
         }
+
         public static StatefulEventInt<byte> Create(byte defaultValue)
         {
             return new StatefulEventInt<byte>(defaultValue, (a, b) => a == b);
         }
+
         public static StatefulEventInt<short> Create(short defaultValue)
         {
             return new StatefulEventInt<short>(defaultValue, (a, b) => a == b);
         }
+
         public static StatefulEventInt<ushort> Create(ushort defaultValue)
         {
             return new StatefulEventInt<ushort>(defaultValue, (a, b) => a == b);
         }
+
         public static StatefulEventInt<int> Create(int defaultValue)
         {
             return new StatefulEventInt<int>(defaultValue, (a, b) => a == b);
         }
+
         public static StatefulEventInt<uint> Create(uint defaultValue)
         {
             return new StatefulEventInt<uint>(defaultValue, (a, b) => a == b);
         }
+
         public static StatefulEventInt<long> Create(long defaultValue)
         {
             return new StatefulEventInt<long>(defaultValue, (a, b) => a == b);
         }
+
         public static StatefulEventInt<ulong> Create(ulong defaultValue)
         {
             return new StatefulEventInt<ulong>(defaultValue, (a, b) => a == b);
         }
+
         public static StatefulEventInt<float> Create(float defaultValue)
         {
             return new StatefulEventInt<float>(defaultValue, (a, b) => a == b);
         }
+
         public static StatefulEventInt<double> Create(double defaultValue)
         {
             return new StatefulEventInt<double>(defaultValue, (a, b) => a == b);
         }
+
         public static StatefulEventInt<T> CreateEnum<T>(T defaultValue) where T : Enum
         {
             return new StatefulEventInt<T>(defaultValue, (a, b) => a.GetHashCode() == b.GetHashCode());
         }
+
         public static StatefulEventInt<T> CreateGenericStruct<T>(T defaultValue) where T : struct, IValue<T>
         {
             return new StatefulEventInt<T>(defaultValue, (a, b) => a.Equals(b));
         }
+
         public static StatefulEventInt<T> CreateGenericClass<T>(T defaultValue) where T : class, IValue<T>
         {
             return new StatefulEventInt<T>(defaultValue, (a, b) => a != null && b != null && a.Equals(b));
@@ -70,6 +85,7 @@ namespace UnityTools.Runtime.StatefulEvent
     public class StatefulEventInt<T> : IStatefulEvent<T>
     {
         public event Action<T> OnValueChanged = t => { };
+
         public T Value
         {
             get
@@ -80,12 +96,14 @@ namespace UnityTools.Runtime.StatefulEvent
                 }
             }
         }
+
         public event Action<T, T> OnValueChangedFromTo = (f, t) => { };
 
-        private object lockObject = new();
+        private readonly object lockObject = new object();
         private readonly T defaultValue;
+        private readonly Func<T, T, bool> equator;
+
         private T currentValue;
-        private Func<T, T, bool> equator;
 
         public StatefulEventInt(T defaultValue, Func<T, T, bool> equator)
         {
@@ -129,6 +147,7 @@ namespace UnityTools.Runtime.StatefulEvent
             {
                 currentValue = defaultValue;
             }
+
             OnValueChangedFromTo = (f, t) => { };
         }
     }
@@ -159,6 +178,7 @@ namespace UnityTools.Runtime.StatefulEvent
                 value1.Set(newValue1);
                 oldValue2 = value2.Value;
             }
+
             FireEventIfChanged(newValue1, oldValue2);
         }
 
@@ -170,6 +190,7 @@ namespace UnityTools.Runtime.StatefulEvent
                 oldValue1 = value1.Value;
                 value2.Set(newValue2);
             }
+
             FireEventIfChanged(oldValue1, newValue2);
         }
 
@@ -180,6 +201,7 @@ namespace UnityTools.Runtime.StatefulEvent
                 value1.Set(newValue1);
                 value2.Set(newValue2);
             }
+
             FireEventIfChanged(newValue1, newValue2);
         }
 
