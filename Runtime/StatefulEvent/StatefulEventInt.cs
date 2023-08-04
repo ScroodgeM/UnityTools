@@ -158,9 +158,10 @@ namespace UnityTools.Runtime.StatefulEvent
         public T1 Value1 => value1.Value;
         public T2 Value2 => value2.Value;
 
-        private object lockObject = new();
+        private readonly object lockObject = new object();
         private readonly StatefulEventInt<T1> value1;
         private readonly StatefulEventInt<T2> value2;
+
         private bool someValueChanged = false;
 
         public StatefulEventInt(StatefulEventInt<T1> value1, StatefulEventInt<T2> value2)
