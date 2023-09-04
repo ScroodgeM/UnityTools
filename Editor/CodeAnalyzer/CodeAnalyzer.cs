@@ -400,7 +400,7 @@ namespace UnityTools.Editor.CodeAnalyzer
             int level = 2; // skip assets/scripts/
             while (true)
             {
-                string namespacePart = GetFolderFromPath(filePath, level);
+                string namespacePart = GetFolderFromPath(filePath, level).Replace(" ", "");
                 if (string.IsNullOrEmpty(namespacePart) == true)
                 {
                     return result;
