@@ -61,10 +61,7 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
 
             lastStateIsVisible = visible;
 
-            return Deferred.All(cache).Done(() =>
-            {
-                TryDisableWhenInvisible();
-            });
+            return Deferred.All(cache).Done(TryDisableWhenInvisible);
         }
 
         private void TryDisableWhenInvisible()
@@ -94,6 +91,12 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
 
                 void DoAction()
                 {
+                    if (animations.Count == 0)
+                    {
+                        gameObject.SetActive(false);
+                        return;
+                    }
+
                     foreach (AnimationBase animation in animations)
                     {
                         if (animation.CanBeDisabledWhenInvisible)
