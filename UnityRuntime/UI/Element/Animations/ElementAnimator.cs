@@ -35,6 +35,7 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
 
             lastStateCounter = 0;
             lastStateIsVisible = visibleByDefault;
+            lastStatePromise = Deferred.Resolved();
 
             TryDisableWhenInvisible();
         }
