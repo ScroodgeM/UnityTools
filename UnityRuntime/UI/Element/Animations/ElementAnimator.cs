@@ -18,6 +18,7 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
 
         private byte lastStateCounter;
         private bool lastStateIsVisible;
+        private IPromise lastStatePromise;
 
         private void Awake()
         {
@@ -40,6 +41,11 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
 
         internal IPromise SetVisible(bool visible)
         {
+            if (lastStateIsVisible == visible)
+            {
+                return lastStatePromise;
+            }
+
             gameObject.SetActive(true);
 
 #if UNITY_EDITOR
@@ -60,8 +66,9 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
             }
 
             lastStateIsVisible = visible;
+            lastStatePromise = Deferred.All(cache).Done(TryDisableWhenInvisible);
 
-            return Deferred.All(cache).Done(TryDisableWhenInvisible);
+            return lastStatePromise;
         }
 
         private void TryDisableWhenInvisible()
