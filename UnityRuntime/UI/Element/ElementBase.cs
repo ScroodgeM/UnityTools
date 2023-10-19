@@ -5,7 +5,7 @@ using UnityTools.UnityRuntime.UI.Element.Animations;
 
 namespace UnityTools.UnityRuntime.UI.Element
 {
-    public abstract class ElementBase : MonoBehaviour
+    public class ElementBase : MonoBehaviour
     {
         private ElementAnimator elementAnimator;
 
@@ -14,7 +14,7 @@ namespace UnityTools.UnityRuntime.UI.Element
             elementAnimator = GetComponent<ElementAnimator>();
         }
 
-        public IPromise SetVisible(bool visible)
+        public virtual IPromise SetVisible(bool visible)
         {
             if (elementAnimator != null)
             {
