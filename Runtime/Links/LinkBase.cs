@@ -14,7 +14,7 @@ namespace UnityTools.Runtime.Links
         public static bool HasValue(LinkBase link)
         {
             return
-                link != null
+                link is LinkBase
                 &&
                 string.IsNullOrEmpty(link.LinkedObjectId) == false
                 &&
