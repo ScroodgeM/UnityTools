@@ -112,7 +112,7 @@ namespace UnityTools.Runtime.StatefulEvent
             this.currentValue = defaultValue;
         }
 
-        public void Set(in T newValue)
+        public bool Set(in T newValue)
         {
             T oldValue = default;
             bool valueChanged = false;
@@ -132,6 +132,8 @@ namespace UnityTools.Runtime.StatefulEvent
                 OnValueChanged(newValue);
                 OnValueChangedFromTo(oldValue, newValue);
             }
+
+            return valueChanged;
         }
 
         public StatefulEventInt<T, T2> Add<T2>(StatefulEventInt<T2> value2)
@@ -171,7 +173,7 @@ namespace UnityTools.Runtime.StatefulEvent
             Reset();
         }
 
-        public void SetValue1(in T1 newValue1)
+        public bool SetValue1(in T1 newValue1)
         {
             T2 oldValue2;
             lock (lockObject)
@@ -180,10 +182,10 @@ namespace UnityTools.Runtime.StatefulEvent
                 oldValue2 = value2.Value;
             }
 
-            FireEventIfChanged(newValue1, oldValue2);
+            return FireEventIfChanged(newValue1, oldValue2);
         }
 
-        public void SetValue2(in T2 newValue2)
+        public bool SetValue2(in T2 newValue2)
         {
             T1 oldValue1;
             lock (lockObject)
@@ -192,10 +194,10 @@ namespace UnityTools.Runtime.StatefulEvent
                 value2.Set(newValue2);
             }
 
-            FireEventIfChanged(oldValue1, newValue2);
+            return FireEventIfChanged(oldValue1, newValue2);
         }
 
-        public void SetValues(in T1 newValue1, in T2 newValue2)
+        public bool SetValues(in T1 newValue1, in T2 newValue2)
         {
             lock (lockObject)
             {
@@ -203,10 +205,10 @@ namespace UnityTools.Runtime.StatefulEvent
                 value2.Set(newValue2);
             }
 
-            FireEventIfChanged(newValue1, newValue2);
+            return FireEventIfChanged(newValue1, newValue2);
         }
 
-        private void FireEventIfChanged(in T1 value1, in T2 value2)
+        private bool FireEventIfChanged(in T1 value1, in T2 value2)
         {
             bool someValueChanged;
 
@@ -220,6 +222,8 @@ namespace UnityTools.Runtime.StatefulEvent
             {
                 OnValueChanged(value1, value2);
             }
+
+            return someValueChanged;
         }
 
         public void Reset()
