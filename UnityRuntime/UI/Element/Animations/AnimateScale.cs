@@ -16,7 +16,7 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
             this.rectTransform = customAnimatedTransform != null ? customAnimatedTransform : GetComponent<RectTransform>();
         }
 
-        internal override bool CanBeDisabledWhenInvisible => invisibleScale < 0.01f;
+        public override bool CanBeDisabledWhenInvisible => invisibleScale < 0.01f;
 
         protected override void ApplyVisibility(float visibility)
         {

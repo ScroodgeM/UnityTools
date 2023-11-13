@@ -21,7 +21,7 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
             quaternionVisible = Quaternion.Euler(rotationVisible);
         }
 
-        internal override bool CanBeDisabledWhenInvisible => canBeDisabledWhenInvisible;
+        public override bool CanBeDisabledWhenInvisible => canBeDisabledWhenInvisible;
 
         protected override void ApplyVisibility(float visibility)
         {

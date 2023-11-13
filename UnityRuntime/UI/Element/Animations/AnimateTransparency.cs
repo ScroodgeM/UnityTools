@@ -20,7 +20,7 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
             }
         }
 
-        internal override bool CanBeDisabledWhenInvisible => invisibleAlpha < 0.01f;
+        public override bool CanBeDisabledWhenInvisible => invisibleAlpha < 0.01f;
 
         protected override void ApplyVisibility(float visibility)
         {
