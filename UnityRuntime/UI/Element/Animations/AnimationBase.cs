@@ -59,7 +59,7 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
 
         protected abstract void Init();
 
-        internal abstract bool CanBeDisabledWhenInvisible { get; }
+        public abstract bool CanBeDisabledWhenInvisible { get; }
 
         protected abstract void ApplyVisibility(float visibility);
     }
