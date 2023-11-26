@@ -41,7 +41,7 @@ namespace UnityTools.UnityRuntime.UI.Element
             TryDisableWhenInvisible();
         }
 
-        internal IPromise SetVisible(bool visible)
+        internal virtual IPromise SetVisible(bool visible)
         {
             if (lastStateIsVisible == visible)
             {

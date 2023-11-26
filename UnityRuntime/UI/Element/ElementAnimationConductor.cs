@@ -1,4 +1,5 @@
 ﻿//this empty line for UTF-8 BOM header
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -7,7 +8,7 @@ using UnityTools.UnityRuntime.Timers;
 
 namespace UnityTools.UnityRuntime.UI.Element
 {
-    public class ElementBaseWithVisibilityConductor : ElementBase
+    public class ElementAnimationConductor : ElementAnimator
     {
         [Serializable]
         private struct OtherElement
@@ -21,7 +22,7 @@ namespace UnityTools.UnityRuntime.UI.Element
         [SerializeField] private float selfShowDelay;
         [SerializeField] private float selfHideDelay;
 
-        public override IPromise SetVisible(bool visible)
+        internal override IPromise SetVisible(bool visible)
         {
             List<IPromise> allPromises = UnityEngine.Pool.ListPool<IPromise>.Get();
 
