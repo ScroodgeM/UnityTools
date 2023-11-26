@@ -1,7 +1,7 @@
 ﻿//this empty line for UTF-8 BOM header
+
 using UnityEngine;
 using UnityTools.Runtime.Promises;
-using UnityTools.UnityRuntime.UI.Element.Animations;
 
 namespace UnityTools.UnityRuntime.UI.Element
 {

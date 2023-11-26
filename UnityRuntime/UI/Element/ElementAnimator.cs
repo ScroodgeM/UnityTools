@@ -4,8 +4,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityTools.Runtime.Promises;
+using UnityTools.UnityRuntime.UI.Element.Animations;
 
-namespace UnityTools.UnityRuntime.UI.Element.Animations
+namespace UnityTools.UnityRuntime.UI.Element
 {
     public class ElementAnimator : MonoBehaviour
     {
