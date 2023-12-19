@@ -1,12 +1,16 @@
 ﻿//this empty line for UTF-8 BOM header
+
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 
 namespace UnityTools.Runtime.Promises
 {
     public class Deferred : BaseDeferred, IPromise
     {
-        private static Queue<Deferred> poolQueue = new Queue<Deferred>();
+        private static ConcurrentQueue<Deferred> poolQueue = new ConcurrentQueue<Deferred>();
+
+        private bool free = false;
 
         protected Deferred()
         {
@@ -14,28 +18,21 @@ namespace UnityTools.Runtime.Promises
 
         ~Deferred()
         {
-            lock (poolQueue)
+            if (free == false)
             {
-                if (poolQueue.Contains(this) == false)
-                {
-                    Reset();
-                    poolQueue.Enqueue(this);
-                    GC.ReRegisterForFinalize(this);
-                }
+                Reset();
+                free = true;
+                poolQueue.Enqueue(this);
+                GC.ReRegisterForFinalize(this);
             }
         }
 
         public static Deferred GetFromPool()
         {
-            if (poolQueue.Count > 0)
+            if (poolQueue.TryDequeue(out Deferred element) == true && element != null && element.free == true)
             {
-                lock (poolQueue)
-                {
-                    if (poolQueue.TryDequeue(out Deferred element) == true && element != null)
-                    {
-                        return element;
-                    }
-                }
+                element.free = false;
+                return element;
             }
 
             return new Deferred();
@@ -175,20 +172,19 @@ namespace UnityTools.Runtime.Promises
 
     public class Deferred<T> : BaseDeferred, IPromise<T>
     {
-        private static Queue<Deferred<T>> poolQueue = new Queue<Deferred<T>>();
+        private static ConcurrentQueue<Deferred<T>> poolQueue = new ConcurrentQueue<Deferred<T>>();
 
+        private bool free = false;
         protected T result;
 
         ~Deferred()
         {
-            lock (poolQueue)
+            if (free == false)
             {
-                if (poolQueue.Contains(this) == false)
-                {
-                    Reset();
-                    poolQueue.Enqueue(this);
-                    GC.ReRegisterForFinalize(this);
-                }
+                Reset();
+                free = true;
+                poolQueue.Enqueue(this);
+                GC.ReRegisterForFinalize(this);
             }
         }
 
@@ -200,15 +196,10 @@ namespace UnityTools.Runtime.Promises
 
         public static Deferred<T> GetFromPool()
         {
-            if (poolQueue.Count > 0)
+            if (poolQueue.TryDequeue(out Deferred<T> element) == true && element != null && element.free == true)
             {
-                lock (poolQueue)
-                {
-                    if (poolQueue.TryDequeue(out Deferred<T> element) == true && element != null)
-                    {
-                        return element;
-                    }
-                }
+                element.free = false;
+                return element;
             }
 
             return new Deferred<T>();
