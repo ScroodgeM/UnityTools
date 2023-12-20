@@ -75,6 +75,11 @@ namespace UnityTools.UnityRuntime.UI.Element
 
         private void TryDisableWhenInvisible()
         {
+            if (this == null)
+            {
+                return;
+            }
+
             if (lastStateIsVisible == false)
             {
                 byte myStateCounter = lastStateCounter;
