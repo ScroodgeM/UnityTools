@@ -32,6 +32,7 @@ namespace UnityTools.UnityRuntime.Timers
                 if (instance == null)
                 {
                     GameObject timerGameObject = new GameObject("Timer");
+                    DontDestroyOnLoad(timerGameObject);
                     instance = timerGameObject.AddComponent<Timer>();
                 }
                 return instance;
