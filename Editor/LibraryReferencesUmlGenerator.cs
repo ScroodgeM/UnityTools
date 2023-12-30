@@ -107,7 +107,7 @@ namespace UnityTools.Editor
         {
             foreach (AsmDefStructure asmDef in asmDefs)
             {
-                umlDocument += $"class {asmDef.name} {GetLibraryColor(asmDef)} {{{Environment.NewLine}";
+                umlDocument += $"class {asmDef.name.FormatAsmDefName()} {GetLibraryColor(asmDef)} {{{Environment.NewLine}";
 
                 umlDocument += GetLibraryBody(asmDef) + Environment.NewLine;
 
@@ -121,7 +121,7 @@ namespace UnityTools.Editor
                     {
                         if (GetLibraryType(reference) >= GetLibraryType(asmDef.name))
                         {
-                            umlDocument += $"{reference} <-- {asmDef.name}{Environment.NewLine}";
+                            umlDocument += $"{reference.FormatAsmDefName()} <-- {asmDef.name.FormatAsmDefName()}{Environment.NewLine}";
                         }
                     }
                 }
@@ -129,6 +129,8 @@ namespace UnityTools.Editor
                 umlDocument += Environment.NewLine;
             }
         }
+
+        private static string FormatAsmDefName(this string name) => name.Replace("-", "_");
 
         private static LibraryType GetLibraryType(string libraryName)
         {
