@@ -43,13 +43,13 @@ namespace UnityTools.UnityRuntime.UI.Element
         private IPromise WaitAndGoSelf(bool visible)
         {
             float delay = visible == true ? selfShowDelay : selfHideDelay;
-            return Timer.Instance.WaitUnscaled(delay).Then(() => base.SetVisible(visible));
+            return Timer.Instance.UnityObjectWaitUnscaled(this, delay).Then(() => base.SetVisible(visible));
         }
 
         private IPromise WaitAndGo(bool visible, OtherElement element)
         {
             float delay = visible == true ? element.showDelay : element.hideDelay;
-            return Timer.Instance.WaitUnscaled(delay).Then(() => element.element.SetVisible(visible));
+            return Timer.Instance.UnityObjectWaitUnscaled(this, delay).Then(() => element.element.SetVisible(visible));
         }
     }
 }

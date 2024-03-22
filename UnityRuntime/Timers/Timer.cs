@@ -1,4 +1,5 @@
 ﻿//this empty line for UTF-8 BOM header
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -13,7 +14,9 @@ namespace UnityTools.UnityRuntime.Timers
         {
             public double duration;
             public double finishTime;
-            public bool unscaledTime;
+            public bool timeIsUnscaled;
+            public bool dieWithUnityObject;
+            public UnityEngine.Object unityObjectToDieWith;
             public Func<bool> additionalCondition;
             public Action<float> progressCallback;
             public Deferred resolver;
@@ -35,6 +38,7 @@ namespace UnityTools.UnityRuntime.Timers
                     DontDestroyOnLoad(timerGameObject);
                     instance = timerGameObject.AddComponent<Timer>();
                 }
+
                 return instance;
             }
         }
@@ -50,19 +54,27 @@ namespace UnityTools.UnityRuntime.Timers
             {
                 Awaiter candidate = awaiters[i];
 
-                double currentTime = candidate.unscaledTime ? Time.realtimeSinceStartupAsDouble : Time.timeAsDouble;
+                if (candidate.dieWithUnityObject == true && candidate.unityObjectToDieWith == null)
+                {
+                    awaiters.RemoveAt(i);
+                    i--;
 
-                if (currentTime >= candidate.finishTime)
+                    candidate.resolver.Reject(new OperationCanceledException());
+                }
+
+                if (GetTime(candidate.timeIsUnscaled) >= candidate.finishTime)
                 {
                     if (candidate.additionalCondition == null || candidate.additionalCondition() == true)
                     {
                         awaiters.RemoveAt(i);
+                        i--;
+
                         if (candidate.progressCallback != null)
                         {
                             candidate.progressCallback(1f);
                         }
+
                         candidate.resolver.Resolve();
-                        i--;
                     }
                 }
                 else
@@ -70,38 +82,66 @@ namespace UnityTools.UnityRuntime.Timers
                     if (candidate.progressCallback != null)
                     {
                         double startTime = candidate.finishTime - candidate.duration;
-                        float progress = Mathf.Clamp01((float)((currentTime - startTime) / candidate.duration));
+                        float progress = Mathf.Clamp01((float)((GetTime(candidate.timeIsUnscaled) - startTime) / candidate.duration));
                         candidate.progressCallback(progress);
                     }
                 }
             }
         }
 
-        public IPromise WaitOneFrame() => Wait(true, 0.001);
-
-        public IPromise Wait(double seconds, Action<float> progressCallback = null) => Wait(false, seconds, progressCallback);
-
-        public IPromise WaitUnscaled(double seconds, Action<float> progressCallback = null) => Wait(true, seconds, progressCallback);
-
-        public IPromise WaitForTrue(Func<bool> condition) => Wait(true, 0.0, null, condition);
-
-        public IPromise WaitForMainThread() => Wait(true, 0.0);
-
-        private IPromise Wait(bool unscaledTime, double seconds, Action<float> progressCallback = null, Func<bool> additionalCondition = null)
+        public IPromise WaitOneFrame()
         {
-            Deferred deferred = Deferred.GetFromPool();
-
-            newAwaiters.Enqueue(new Awaiter
-            {
-                duration = seconds,
-                finishTime = (unscaledTime ? Time.realtimeSinceStartupAsDouble : Time.timeAsDouble) + seconds,
-                unscaledTime = unscaledTime,
-                additionalCondition = additionalCondition,
-                progressCallback = progressCallback,
-                resolver = deferred,
-            });
-
-            return deferred;
+            return Wait(true, 0.001);
         }
+
+        public IPromise Wait(double seconds, Action<float> progressCallback = null)
+        {
+            return Wait(false, seconds, progressCallback);
+        }
+
+        public IPromise WaitUnscaled(double seconds, Action<float> progressCallback = null)
+        {
+            return Wait(true, seconds, progressCallback);
+        }
+
+        public IPromise UnityObjectWait(UnityEngine.Object unityObjectToDieWith, double seconds, Action<float> progressCallback = null)
+        {
+            return Wait(false, seconds, progressCallback, null, true, unityObjectToDieWith);
+        }
+
+        public IPromise UnityObjectWaitUnscaled(UnityEngine.Object unityObjectToDieWith, double seconds, Action<float> progressCallback = null)
+        {
+            return Wait(true, seconds, progressCallback, null, true, unityObjectToDieWith);
+        }
+
+        public IPromise WaitForTrue(Func<bool> condition)
+        {
+            return Wait(true, 0.0, null, condition);
+        }
+
+        public IPromise WaitForMainThread()
+        {
+            return Wait(true, 0.0);
+        }
+
+        private IPromise Wait(bool timeIsUnscaled, double seconds, Action<float> progressCallback = null, Func<bool> additionalCondition = null, bool dieWithUnityObject = false, UnityEngine.Object unityObjectToDieWith = null)
+        {
+            Awaiter awaiter;
+
+            awaiter.duration = seconds;
+            awaiter.finishTime = GetTime(timeIsUnscaled) + seconds;
+            awaiter.timeIsUnscaled = timeIsUnscaled;
+            awaiter.additionalCondition = additionalCondition;
+            awaiter.progressCallback = progressCallback;
+            awaiter.resolver = Deferred.GetFromPool();
+            awaiter.dieWithUnityObject = dieWithUnityObject;
+            awaiter.unityObjectToDieWith = unityObjectToDieWith;
+
+            newAwaiters.Enqueue(awaiter);
+
+            return awaiter.resolver;
+        }
+
+        private static double GetTime(bool unscaled) => unscaled ? Time.realtimeSinceStartupAsDouble : Time.timeAsDouble;
     }
 }

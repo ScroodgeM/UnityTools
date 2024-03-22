@@ -40,19 +40,16 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
         {
             float duration = newVisibleState ? showAnimationDuration : hideAnimationDuration;
 
-            return Timer.Instance.WaitUnscaled(duration,
+            return Timer.Instance.UnityObjectWaitUnscaled(this, duration,
                 progress =>
                 {
-                    if (this != null)
+                    if (newVisibleState == true)
                     {
-                        if (newVisibleState == true)
-                        {
-                            ApplyVisibility(progress);
-                        }
-                        else
-                        {
-                            ApplyVisibility(1f - progress);
-                        }
+                        ApplyVisibility(progress);
+                    }
+                    else
+                    {
+                        ApplyVisibility(1f - progress);
                     }
                 });
         }
