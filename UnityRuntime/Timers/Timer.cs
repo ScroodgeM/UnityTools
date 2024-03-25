@@ -104,6 +104,16 @@ namespace UnityTools.UnityRuntime.Timers
             return Wait(true, seconds, progressCallback);
         }
 
+        public IPromise WaitForTrue(Func<bool> condition)
+        {
+            return Wait(true, 0.0, null, condition);
+        }
+
+        public IPromise WaitForMainThread()
+        {
+            return Wait(true, 0.0);
+        }
+
         public IPromise UnityObjectWait(UnityEngine.Object unityObjectToDieWith, double seconds, Action<float> progressCallback = null)
         {
             return Wait(false, seconds, progressCallback, null, true, unityObjectToDieWith);
@@ -114,14 +124,9 @@ namespace UnityTools.UnityRuntime.Timers
             return Wait(true, seconds, progressCallback, null, true, unityObjectToDieWith);
         }
 
-        public IPromise WaitForTrue(Func<bool> condition)
+        public IPromise UnityObjectWaitForTrue(UnityEngine.Object unityObjectToDieWith, Func<bool> condition)
         {
-            return Wait(true, 0.0, null, condition);
-        }
-
-        public IPromise WaitForMainThread()
-        {
-            return Wait(true, 0.0);
+            return Wait(true, 0.0, null, condition, true, unityObjectToDieWith);
         }
 
         private IPromise Wait(bool timeIsUnscaled, double seconds, Action<float> progressCallback = null, Func<bool> additionalCondition = null, bool dieWithUnityObject = false, UnityEngine.Object unityObjectToDieWith = null)
