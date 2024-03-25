@@ -60,6 +60,7 @@ namespace UnityTools.UnityRuntime.Timers
                     i--;
 
                     candidate.resolver.Reject(new OperationCanceledException());
+                    continue;
                 }
 
                 if (GetTime(candidate.timeIsUnscaled) >= candidate.finishTime)
@@ -75,6 +76,7 @@ namespace UnityTools.UnityRuntime.Timers
                         }
 
                         candidate.resolver.Resolve();
+                        continue;
                     }
                 }
                 else
