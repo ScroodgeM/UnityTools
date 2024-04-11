@@ -89,6 +89,7 @@ namespace UnityTools.UnityRuntime.UI
                 interruptedLongTap == false &&
                 timeToHandleLongTap.HasValue &&
                 timeToHandleLongTap.Value < DateTime.UtcNow &&
+                dragStarted == false &&
                 clickStartPosition.HasValue &&
                 clickLastKnownData != null &&
                 (clickStartPosition.Value - clickLastKnownData.position).sqrMagnitude < minDragOffsetSqr
@@ -121,6 +122,8 @@ namespace UnityTools.UnityRuntime.UI
             {
                 forwardToParentScrollRect = true;
             }
+
+            timeToHandleLongTap = null;
 
             if (forwardToParentScrollRect == true)
             {
@@ -243,6 +246,7 @@ namespace UnityTools.UnityRuntime.UI
                 case PointerEventType.Up:
                     if (
                         timeToHandleLongTap.HasValue &&
+                        dragStarted == false &&
                         clickStartPosition.HasValue &&
                         (clickStartPosition.Value - eData.position).sqrMagnitude < minDragOffsetSqr
                         )
