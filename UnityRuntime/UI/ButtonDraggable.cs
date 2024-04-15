@@ -1,4 +1,5 @@
 ﻿//this empty line for UTF-8 BOM header
+
 using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -42,9 +43,6 @@ namespace UnityTools.UnityRuntime.UI
         private Vector2? clickStartPosition;
         private PointerEventData clickLastKnownData;
 
-        private float minDragOffsetSqr;
-
-        private const float minDragOffset = 0.02f;
         private const float longTapTimeout = 0.3f;
         private const float maxDoubleClickTime = .1f;
 
@@ -71,7 +69,6 @@ namespace UnityTools.UnityRuntime.UI
         {
             base.Awake();
 
-            minDragOffsetSqr = minDragOffset * minDragOffset * Screen.width * Screen.height;
             parentScrollRect = GetComponentInParent<ScrollRect>();
         }
 
@@ -91,8 +88,7 @@ namespace UnityTools.UnityRuntime.UI
                 timeToHandleLongTap.Value < DateTime.UtcNow &&
                 dragStarted == false &&
                 clickStartPosition.HasValue &&
-                clickLastKnownData != null &&
-                (clickStartPosition.Value - clickLastKnownData.position).sqrMagnitude < minDragOffsetSqr
+                clickLastKnownData != null
                 )
             {
                 OnEvent(PointerEventType.LongTap, clickLastKnownData);
@@ -247,8 +243,7 @@ namespace UnityTools.UnityRuntime.UI
                     if (
                         timeToHandleLongTap.HasValue &&
                         dragStarted == false &&
-                        clickStartPosition.HasValue &&
-                        (clickStartPosition.Value - eData.position).sqrMagnitude < minDragOffsetSqr
+                        clickStartPosition.HasValue
                         )
                     {
                         OnEvent(PointerEventType.Click, clickLastKnownData);
