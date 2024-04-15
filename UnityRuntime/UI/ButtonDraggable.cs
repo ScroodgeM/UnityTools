@@ -17,7 +17,8 @@ namespace UnityTools.UnityRuntime.UI
         Move,
         Up,
         Click,
-        LongTap,
+        LongTapAndHold,
+        LongClick,
         DoubleClick
     }
 
@@ -44,7 +45,7 @@ namespace UnityTools.UnityRuntime.UI
         private Vector2? clickStartPosition;
         private PointerEventData clickLastKnownData;
 
-        private const float longTapTimeout = 0.3f;
+        private const float longTapTimeout = 0.5f;
         private const float maxDoubleClickTime = .1f;
 
         public bool ButtonIsDraggable
@@ -89,7 +90,7 @@ namespace UnityTools.UnityRuntime.UI
                 clickLastKnownData != null
             )
             {
-                OnEvent(PointerEventType.LongTap, clickLastKnownData);
+                OnEvent(PointerEventType.LongTapAndHold, clickLastKnownData);
                 timeToHandleLongTap = null;
                 forwardToParentScrollRect = false;
             }
@@ -249,12 +250,18 @@ namespace UnityTools.UnityRuntime.UI
 
                 case PointerEventType.Up:
                     if (
-                        timeToHandleLongTap.HasValue &&
                         dragStarted == false &&
                         clickStartPosition.HasValue
                     )
                     {
-                        OnEvent(PointerEventType.Click, clickLastKnownData);
+                        if (timeToHandleLongTap.HasValue == true)
+                        {
+                            OnEvent(PointerEventType.Click, clickLastKnownData);
+                        }
+                        else
+                        {
+                            OnEvent(PointerEventType.LongClick, clickLastKnownData);
+                        }
                     }
 
                     clickStartPosition = null;
