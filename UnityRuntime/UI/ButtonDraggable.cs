@@ -14,13 +14,14 @@ namespace UnityTools.UnityRuntime.UI
         EndDrag,
         Scroll,
         Down,
+        Move,
         Up,
         Click,
         LongTap,
         DoubleClick
     }
 
-    public class ButtonDraggable : Button, IBeginDragHandler, IDragHandler, IEndDragHandler, IScrollHandler
+    public class ButtonDraggable : Button, IBeginDragHandler, IDragHandler, IEndDragHandler, IScrollHandler, IPointerMoveHandler
     {
         public event Action<PointerEventType, PointerEventData> OnEvent = (eventType, evenData) => { };
 
@@ -48,10 +49,7 @@ namespace UnityTools.UnityRuntime.UI
 
         public bool ButtonIsDraggable
         {
-            get
-            {
-                return isDraggable;
-            }
+            get => isDraggable;
             set
             {
                 // return the button to start position, if being disabled while dragging
@@ -89,7 +87,7 @@ namespace UnityTools.UnityRuntime.UI
                 dragStarted == false &&
                 clickStartPosition.HasValue &&
                 clickLastKnownData != null
-                )
+            )
             {
                 OnEvent(PointerEventType.LongTap, clickLastKnownData);
                 timeToHandleLongTap = null;
@@ -205,6 +203,13 @@ namespace UnityTools.UnityRuntime.UI
             HandleEvent(PointerEventType.Down, eventData);
         }
 
+        public void OnPointerMove(PointerEventData eventData)
+        {
+            if (interactable == false) return;
+
+            HandleEvent(PointerEventType.Move, eventData);
+        }
+
         public override void OnPointerUp(PointerEventData eventData)
         {
             base.OnPointerUp(eventData);
@@ -215,7 +220,9 @@ namespace UnityTools.UnityRuntime.UI
         }
 
         [Obsolete("use down->up sequence instead", true)]
-        public new void OnPointerClick(PointerEventData eventData) { }
+        public new void OnPointerClick(PointerEventData eventData)
+        {
+        }
 
         private void HandleEvent(PointerEventType eType, PointerEventData eData)
         {
@@ -230,10 +237,11 @@ namespace UnityTools.UnityRuntime.UI
                         anotherPointer == false &&
                         timeToHandleDoubleClick.HasValue &&
                         DateTime.UtcNow < timeToHandleDoubleClick.Value
-                        )
+                    )
                     {
                         OnEvent(PointerEventType.DoubleClick, eData);
                     }
+
                     timeToHandleLongTap = DateTime.UtcNow.AddSeconds(longTapTimeout);
                     timeToHandleDoubleClick = DateTime.UtcNow.AddSeconds(maxDoubleClickTime);
                     startAnchoredPosition = rectTransform.anchoredPosition;
@@ -244,10 +252,11 @@ namespace UnityTools.UnityRuntime.UI
                         timeToHandleLongTap.HasValue &&
                         dragStarted == false &&
                         clickStartPosition.HasValue
-                        )
+                    )
                     {
                         OnEvent(PointerEventType.Click, clickLastKnownData);
                     }
+
                     clickStartPosition = null;
                     clickLastKnownData = null;
                     timeToHandleLongTap = null;
@@ -255,6 +264,7 @@ namespace UnityTools.UnityRuntime.UI
                     {
                         rectTransform.anchoredPosition = startAnchoredPosition;
                     }
+
                     break;
 
                 case PointerEventType.Drag:
@@ -263,6 +273,7 @@ namespace UnityTools.UnityRuntime.UI
                     {
                         rectTransform.anchoredPosition += eData.delta / canvas.scaleFactor;
                     }
+
                     clickLastKnownData = eData;
                     break;
             }
