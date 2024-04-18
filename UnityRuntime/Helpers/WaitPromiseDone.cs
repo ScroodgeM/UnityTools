@@ -1,4 +1,5 @@
 ﻿//this empty line for UTF-8 BOM header
+
 using UnityEngine;
 using UnityTools.Runtime.Promises;
 
@@ -8,7 +9,7 @@ namespace UnityTools.UnityRuntime.Helpers
     {
         private bool completed = false;
 
-        public override bool keepWaiting => this.completed;
+        public override bool keepWaiting => this.completed == false;
 
         public WaitPromiseDone(IPromise promise)
         {
