@@ -18,6 +18,7 @@ namespace UnityTools.UnityRuntime.UI.Element
             public float hideDelay;
         }
 
+        [SerializeField] private bool unscaledTime = false;
         [SerializeField] private OtherElement[] otherElements;
         [SerializeField] private float selfShowDelay;
         [SerializeField] private float selfHideDelay;
@@ -43,13 +44,19 @@ namespace UnityTools.UnityRuntime.UI.Element
         private IPromise WaitAndGoSelf(bool visible)
         {
             float delay = visible == true ? selfShowDelay : selfHideDelay;
-            return Timer.Instance.UnityObjectWaitUnscaled(this, delay).Then(() => base.SetVisible(visible));
+            IPromise delayPromise = unscaledTime == true
+                ? Timer.Instance.UnityObjectWaitUnscaled(this, delay)
+                : Timer.Instance.UnityObjectWait(this, delay);
+            return delayPromise.Then(() => base.SetVisible(visible));
         }
 
         private IPromise WaitAndGo(bool visible, OtherElement element)
         {
             float delay = visible == true ? element.showDelay : element.hideDelay;
-            return Timer.Instance.UnityObjectWaitUnscaled(this, delay).Then(() => element.element.SetVisible(visible));
+            IPromise delayPromise = unscaledTime == true
+                ? Timer.Instance.UnityObjectWaitUnscaled(this, delay)
+                : Timer.Instance.UnityObjectWait(this, delay);
+            return delayPromise.Then(() => element.element.SetVisible(visible));
         }
     }
 }

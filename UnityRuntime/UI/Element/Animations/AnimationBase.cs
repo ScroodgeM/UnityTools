@@ -9,6 +9,8 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
     [RequireComponent(typeof(ElementAnimator))]
     public abstract class AnimationBase : MonoBehaviour
     {
+        [SerializeField] private bool unscaledTime = false;
+
         private bool lastVisible;
         private IPromise lastAnimation;
         private float showAnimationDuration;
@@ -40,18 +42,26 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
         {
             float duration = newVisibleState ? showAnimationDuration : hideAnimationDuration;
 
-            return Timer.Instance.UnityObjectWaitUnscaled(this, duration,
-                progress =>
+            if (unscaledTime == true)
+            {
+                return Timer.Instance.UnityObjectWaitUnscaled(this, duration, HandleProgress);
+            }
+            else
+            {
+                return Timer.Instance.UnityObjectWait(this, duration, HandleProgress);
+            }
+
+            void HandleProgress(float progress)
+            {
+                if (newVisibleState == true)
                 {
-                    if (newVisibleState == true)
-                    {
-                        ApplyVisibility(progress);
-                    }
-                    else
-                    {
-                        ApplyVisibility(1f - progress);
-                    }
-                });
+                    ApplyVisibility(progress);
+                }
+                else
+                {
+                    ApplyVisibility(1f - progress);
+                }
+            }
         }
 
         protected abstract void Init();
