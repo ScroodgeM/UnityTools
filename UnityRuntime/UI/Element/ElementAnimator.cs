@@ -10,7 +10,7 @@ namespace UnityTools.UnityRuntime.UI.Element
 {
     public class ElementAnimator : MonoBehaviour
     {
-        private const float DEFAULT_ANIMATION_DURATION = 0.3f;
+        internal const float DEFAULT_ANIMATION_DURATION = 0.3f;
 
         [SerializeField] private bool visibleByDefault = false;
 

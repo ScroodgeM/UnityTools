@@ -9,7 +9,7 @@ namespace UnityTools.UnityRuntime.UI.Element
         internal float ShowAnimationDuration => showAnimationDuration;
         internal float HideAnimationDuration => hideAnimationDuration;
 
-        [SerializeField] private float showAnimationDuration;
-        [SerializeField] private float hideAnimationDuration;
+        [SerializeField] private float showAnimationDuration = ElementAnimator.DEFAULT_ANIMATION_DURATION;
+        [SerializeField] private float hideAnimationDuration = ElementAnimator.DEFAULT_ANIMATION_DURATION;
     }
 }
