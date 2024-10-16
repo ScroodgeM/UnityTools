@@ -15,7 +15,7 @@ namespace UnityTools.UnityRuntime.Links
         {
             if (cache.TryGetValue(link, out TD cachedObject) == false)
             {
-                cachedObject = Resources.Load<TD>(Path.Combine(LinkBase.GetPathForAssetInsideResources<TL>(), link.LinkedObjectId));
+                cachedObject = Resources.Load<TD>(Path.Combine(LinkBase.GetPathForAssetInsideResources<TD>(), link.LinkedObjectId));
                 cache.Add(link, cachedObject);
             }
 
