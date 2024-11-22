@@ -18,13 +18,15 @@ namespace UnityTools.UnityRuntime.Links
 
         public TD GetByLink(TL link)
         {
+            if (useCache == false)
+            {
+                return LoadFromResources(link);
+            }
+
             if (cache.TryGetValue(link, out TD cachedObject) == false)
             {
-                cachedObject = UnityEngine.Resources.Load<TD>(Path.Combine(LinkBase.GetPathForAssetInsideResources<TD>(), link.LinkedObjectId));
-                if (useCache == true)
-                {
-                    cache.Add(link, cachedObject);
-                }
+                cachedObject = LoadFromResources(link);
+                cache.Add(link, cachedObject);
             }
 
             return cachedObject;
@@ -32,15 +34,12 @@ namespace UnityTools.UnityRuntime.Links
 
         public void ClearCachedObjects()
         {
-            foreach (TD dataObject in cache.Values)
-            {
-                if (dataObject != null)
-                {
-                    UnityEngine.Resources.UnloadAsset(dataObject);
-                }
-            }
-
             cache.Clear();
+        }
+
+        private TD LoadFromResources(TL link)
+        {
+            return UnityEngine.Resources.Load<TD>(Path.Combine(LinkBase.GetPathForAssetInsideResources<TD>(), link.LinkedObjectId));
         }
     }
 }
