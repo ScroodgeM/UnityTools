@@ -9,8 +9,6 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
     [RequireComponent(typeof(ElementAnimator))]
     public abstract class AnimationBase : MonoBehaviour
     {
-        [SerializeField] private bool unscaledTime = false;
-
         private bool lastVisible;
         private IPromise lastAnimation;
         private float showAnimationDuration;
@@ -27,18 +25,18 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
             ApplyVisibility(visible ? 1f : 0f);
         }
 
-        public IPromise SetVisible(bool visible)
+        internal IPromise SetVisible(bool visible, bool unscaledTime)
         {
             if (lastVisible != visible)
             {
                 lastVisible = visible;
-                lastAnimation = lastAnimation.Then(() => { return StartAnimation(visible); });
+                lastAnimation = lastAnimation.Then(() => { return StartAnimation(visible, unscaledTime); });
             }
 
             return lastAnimation;
         }
 
-        private IPromise StartAnimation(bool newVisibleState)
+        private IPromise StartAnimation(bool newVisibleState, bool unscaledTime)
         {
             float duration = newVisibleState ? showAnimationDuration : hideAnimationDuration;
 

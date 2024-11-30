@@ -3,6 +3,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityTools.Runtime.Promises;
 using UnityTools.UnityRuntime.UI.Element.Animations;
 
@@ -13,9 +14,9 @@ namespace UnityTools.UnityRuntime.UI.Element
         internal const float DEFAULT_ANIMATION_DURATION = 0.3f;
 
         [SerializeField] private bool visibleByDefault = false;
+        [SerializeField] private bool unscaledTime = false;
 
         private readonly List<AnimationBase> animations = new List<AnimationBase>();
-        private readonly List<IPromise> cache = new List<IPromise>();
 
         private byte lastStateCounter;
         private bool lastStateIsVisible;
@@ -43,6 +44,8 @@ namespace UnityTools.UnityRuntime.UI.Element
 
         internal virtual IPromise SetVisible(bool visible)
         {
+            using PooledObject<List<IPromise>> _ = ListPool<IPromise>.Get(out List<IPromise> promises);
+
             if (lastStateIsVisible == visible)
             {
                 return lastStatePromise;
@@ -55,11 +58,9 @@ namespace UnityTools.UnityRuntime.UI.Element
             GetComponents(animations);
 #endif
 
-            cache.Clear();
-
             foreach (AnimationBase animation in animations)
             {
-                cache.Add(animation.SetVisible(visible));
+                promises.Add(animation.SetVisible(visible, unscaledTime));
             }
 
             unchecked
@@ -68,7 +69,7 @@ namespace UnityTools.UnityRuntime.UI.Element
             }
 
             lastStateIsVisible = visible;
-            lastStatePromise = Deferred.All(cache).Done(TryDisableWhenInvisible);
+            lastStatePromise = Deferred.All(promises).Done(TryDisableWhenInvisible);
 
             return lastStatePromise;
         }
