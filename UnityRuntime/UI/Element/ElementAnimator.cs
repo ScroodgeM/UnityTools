@@ -14,7 +14,7 @@ namespace UnityTools.UnityRuntime.UI.Element
         internal const float DEFAULT_ANIMATION_DURATION = 0.3f;
 
         [SerializeField] private bool visibleByDefault = false;
-        [SerializeField] private bool unscaledTime = false;
+        [SerializeField] protected bool unscaledTime = false;
 
         private readonly List<AnimationBase> animations = new List<AnimationBase>();
 

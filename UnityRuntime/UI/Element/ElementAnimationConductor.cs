@@ -18,7 +18,6 @@ namespace UnityTools.UnityRuntime.UI.Element
             public float hideDelay;
         }
 
-        [SerializeField] private bool unscaledTime = false;
         [SerializeField] private OtherElement[] otherElements;
         [SerializeField] private float selfShowDelay;
         [SerializeField] private float selfHideDelay;
