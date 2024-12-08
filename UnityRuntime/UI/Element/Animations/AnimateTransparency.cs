@@ -10,7 +10,7 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
 
         private CanvasGroup canvasGroup;
 
-        protected override void Init()
+        protected override void Initialize()
         {
             canvasGroup = GetComponent<CanvasGroup>();
 

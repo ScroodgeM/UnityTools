@@ -13,7 +13,7 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
 
         private RectTransform rectTransform;
 
-        protected override void Init()
+        protected override void Initialize()
         {
             this.rectTransform = customAnimatedTransform != null ? customAnimatedTransform : GetComponent<RectTransform>();
         }

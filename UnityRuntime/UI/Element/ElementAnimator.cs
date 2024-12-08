@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityTools.Runtime.Promises;
+using UnityTools.Runtime.StatefulEvent;
 using UnityTools.UnityRuntime.UI.Element.Animations;
 
 namespace UnityTools.UnityRuntime.UI.Element
@@ -12,31 +13,69 @@ namespace UnityTools.UnityRuntime.UI.Element
     public class ElementAnimator : MonoBehaviour
     {
         internal const float DEFAULT_ANIMATION_DURATION = 0.3f;
+        internal bool UnscaledTime => unscaledTime;
+
+        internal IStatefulEvent<bool> CurrentVisibility => currentVisibility;
+
+        internal float ShowAnimationDuration
+        {
+            get
+            {
+                Initialize();
+                return customDuration == null ? DEFAULT_ANIMATION_DURATION : customDuration.ShowAnimationDuration;
+            }
+        }
+
+        internal float HideAnimationDuration
+        {
+            get
+            {
+                Initialize();
+                return customDuration == null ? DEFAULT_ANIMATION_DURATION : customDuration.HideAnimationDuration;
+            }
+        }
 
         [SerializeField] private bool visibleByDefault = false;
         [SerializeField] protected bool unscaledTime = false;
 
+        private bool initialized = false;
+
+        private ElementAnimatorCustomDuration customDuration;
         private readonly List<AnimationBase> animations = new List<AnimationBase>();
 
+        private bool visibilitySet = false;
+        private readonly StatefulEventInt<bool> currentVisibility = StatefulEventInt.Create(false);
         private byte lastStateCounter;
-        private bool lastStateIsVisible;
         private IPromise lastStatePromise;
+
+        private void Initialize()
+        {
+#if !UNITY_EDITOR
+            if (initialized == true)
+            {
+                return;
+            }
+#endif
+
+            if (visibilitySet == false)
+            {
+                currentVisibility.Set(visibleByDefault);
+                visibilitySet = true;
+            }
+
+            customDuration = GetComponent<ElementAnimatorCustomDuration>();
+
+            animations.Clear();
+            GetComponents(animations);
+
+            initialized = true;
+        }
 
         private void Awake()
         {
-            ElementAnimatorCustomDuration customDuration = GetComponent<ElementAnimatorCustomDuration>();
-            float showAnimationDuration = customDuration == null ? DEFAULT_ANIMATION_DURATION : customDuration.ShowAnimationDuration;
-            float hideAnimationDuration = customDuration == null ? DEFAULT_ANIMATION_DURATION : customDuration.HideAnimationDuration;
-
-            GetComponents(animations);
-
-            foreach (AnimationBase animation in animations)
-            {
-                animation.Init(visibleByDefault, showAnimationDuration, hideAnimationDuration);
-            }
+            Initialize();
 
             lastStateCounter = 0;
-            lastStateIsVisible = visibleByDefault;
             lastStatePromise = Deferred.Resolved();
 
             TryDisableWhenInvisible();
@@ -44,23 +83,23 @@ namespace UnityTools.UnityRuntime.UI.Element
 
         internal virtual IPromise SetVisible(bool visible)
         {
-            using PooledObject<List<IPromise>> _ = ListPool<IPromise>.Get(out List<IPromise> promises);
-
-            if (lastStateIsVisible == visible)
+            if (currentVisibility.Value == visible)
             {
                 return lastStatePromise;
             }
 
+            currentVisibility.Set(visible);
+            visibilitySet = true;
+
+            Initialize();
+
             gameObject.SetActive(true);
 
-#if UNITY_EDITOR
-            animations.Clear();
-            GetComponents(animations);
-#endif
+            using PooledObject<List<IPromise>> _ = ListPool<IPromise>.Get(out List<IPromise> promises);
 
             foreach (AnimationBase animation in animations)
             {
-                promises.Add(animation.SetVisible(visible, unscaledTime));
+                promises.Add(animation.LastStateAnimation);
             }
 
             unchecked
@@ -68,7 +107,6 @@ namespace UnityTools.UnityRuntime.UI.Element
                 lastStateCounter++;
             }
 
-            lastStateIsVisible = visible;
             lastStatePromise = Deferred.All(promises).Done(TryDisableWhenInvisible);
 
             return lastStatePromise;
@@ -81,7 +119,7 @@ namespace UnityTools.UnityRuntime.UI.Element
                 return;
             }
 
-            if (lastStateIsVisible == false)
+            if (currentVisibility.Value == false)
             {
                 byte myStateCounter = lastStateCounter;
 

@@ -14,7 +14,7 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
         private Quaternion quaternionHidden;
         private Quaternion quaternionVisible;
 
-        protected override void Init()
+        protected override void Initialize()
         {
             this.rectTransform = customAnimatedTransform != null ? customAnimatedTransform : GetComponent<RectTransform>();
             quaternionHidden = Quaternion.Euler(rotationHidden);

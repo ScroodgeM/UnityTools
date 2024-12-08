@@ -9,49 +9,61 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
     [RequireComponent(typeof(ElementAnimator))]
     public abstract class AnimationBase : MonoBehaviour
     {
-        private bool lastVisible;
-        private IPromise lastAnimation;
-        private float showAnimationDuration;
-        private float hideAnimationDuration;
+        internal IPromise LastStateAnimation => lastStateAnimation;
 
-        public void Init(bool visible, float showAnimationDuration, float hideAnimationDuration)
+        private bool initialized = false;
+        private ElementAnimator elementAnimator;
+        private bool lastStateIsVisible;
+        private IPromise lastStateAnimation = Deferred.Resolved();
+
+        private void Awake()
         {
-            this.showAnimationDuration = showAnimationDuration;
-            this.hideAnimationDuration = hideAnimationDuration;
+            elementAnimator = GetComponent<ElementAnimator>();
+            elementAnimator.CurrentVisibility.OnValueChanged += SetVisible;
 
-            lastVisible = visible;
-            lastAnimation = Deferred.Resolved();
-            Init();
-            ApplyVisibility(visible ? 1f : 0f);
+            lastStateIsVisible = elementAnimator.CurrentVisibility.Value;
+            ApplyVisibility(lastStateIsVisible ? 1f : 0f);
         }
 
-        internal IPromise SetVisible(bool visible, bool unscaledTime)
+        private void SetVisible(bool newStateIsVisible)
         {
-            if (lastVisible != visible)
+#if !UNITY_EDITOR
+            if (initialized == false)
+#endif
             {
-                lastVisible = visible;
-                lastAnimation = lastAnimation.Then(() => { return StartAnimation(visible, unscaledTime); });
+                Initialize();
+
+                initialized = true;
             }
 
-            return lastAnimation;
+            if (lastStateIsVisible != newStateIsVisible)
+            {
+                lastStateIsVisible = newStateIsVisible;
+                lastStateAnimation = lastStateAnimation.Then(() => StartAnimation(newStateIsVisible));
+            }
         }
 
-        private IPromise StartAnimation(bool newVisibleState, bool unscaledTime)
+        private IPromise StartAnimation(bool newStateIsVisible)
         {
-            float duration = newVisibleState ? showAnimationDuration : hideAnimationDuration;
-
-            if (unscaledTime == true)
+            if (elementAnimator.UnscaledTime == true)
             {
-                return Timer.Instance.UnityObjectWaitUnscaled(this, duration, HandleProgress);
+                return Timer.Instance.UnityObjectWaitUnscaled(this, GetDuration(), HandleProgress);
             }
             else
             {
-                return Timer.Instance.UnityObjectWait(this, duration, HandleProgress);
+                return Timer.Instance.UnityObjectWait(this, GetDuration(), HandleProgress);
+            }
+
+            float GetDuration()
+            {
+                return newStateIsVisible
+                    ? elementAnimator.ShowAnimationDuration
+                    : elementAnimator.HideAnimationDuration;
             }
 
             void HandleProgress(float progress)
             {
-                if (newVisibleState == true)
+                if (newStateIsVisible == true)
                 {
                     ApplyVisibility(progress);
                 }
@@ -62,7 +74,7 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
             }
         }
 
-        protected abstract void Init();
+        protected abstract void Initialize();
 
         public abstract bool CanBeDisabledWhenInvisible { get; }
 
