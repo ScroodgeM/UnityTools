@@ -21,20 +21,15 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
             elementAnimator = GetComponent<ElementAnimator>();
             elementAnimator.CurrentVisibility.OnValueChanged += SetVisible;
 
+            InitializeInternal();
+
             lastStateIsVisible = elementAnimator.CurrentVisibility.Value;
             ApplyVisibility(lastStateIsVisible ? 1f : 0f);
         }
 
         private void SetVisible(bool newStateIsVisible)
         {
-#if !UNITY_EDITOR
-            if (initialized == false)
-#endif
-            {
-                Initialize();
-
-                initialized = true;
-            }
+            InitializeInternal();
 
             if (lastStateIsVisible != newStateIsVisible)
             {
@@ -71,6 +66,18 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
                 {
                     ApplyVisibility(1f - progress);
                 }
+            }
+        }
+
+        private void InitializeInternal()
+        {
+#if !UNITY_EDITOR
+            if (initialized == false)
+#endif
+            {
+                Initialize();
+
+                initialized = true;
             }
         }
 
