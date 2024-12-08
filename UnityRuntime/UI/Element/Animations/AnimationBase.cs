@@ -1,71 +1,79 @@
 ﻿//this empty line for UTF-8 BOM header
 
+using System;
 using UnityEngine;
 using UnityTools.Runtime.Promises;
-using UnityTools.UnityRuntime.Timers;
 
 namespace UnityTools.UnityRuntime.UI.Element.Animations
 {
     [RequireComponent(typeof(ElementAnimator))]
     public abstract class AnimationBase : MonoBehaviour
     {
-        internal IPromise LastStateAnimation => lastStateAnimation;
+        private struct AnimationTask
+        {
+            public bool goalVisibilityState;
+            public float changeSpeed;
+            public Deferred completePromise;
+        }
+
+        internal IPromise LastStateAnimation => currentAnimationTask.HasValue ? currentAnimationTask.Value.completePromise : Deferred.Resolved();
 
         private bool initialized = false;
         private ElementAnimator elementAnimator;
-        private bool lastStateIsVisible;
-        private IPromise lastStateAnimation = Deferred.Resolved();
+        private float currentVisibilityState;
+        private AnimationTask? currentAnimationTask;
 
         private void Awake()
         {
+            InitializeInternal();
+
             elementAnimator = GetComponent<ElementAnimator>();
             elementAnimator.CurrentVisibility.OnValueChanged += SetVisible;
-
-            InitializeInternal();
-
-            lastStateIsVisible = elementAnimator.CurrentVisibility.Value;
-            ApplyVisibility(lastStateIsVisible ? 1f : 0f);
+            ApplyVisibility(elementAnimator.CurrentVisibility.Value ? 1f : 0f);
         }
 
-        private void SetVisible(bool newStateIsVisible)
+        private void Update()
         {
-            InitializeInternal();
-
-            if (lastStateIsVisible != newStateIsVisible)
+            if (currentAnimationTask.HasValue == true)
             {
-                lastStateIsVisible = newStateIsVisible;
-                lastStateAnimation = lastStateAnimation.Then(() => StartAnimation(newStateIsVisible));
+                InitializeInternal();
+
+                AnimationTask task = currentAnimationTask.Value;
+
+                float deltaTime = elementAnimator.UnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
+                float goalVisibilityState = task.goalVisibilityState ? 1f : 0f;
+
+                currentVisibilityState = Mathf.MoveTowards(currentVisibilityState, goalVisibilityState, task.changeSpeed * deltaTime);
+
+                ApplyVisibility(currentVisibilityState);
+
+                if (Mathf.Approximately(currentVisibilityState, goalVisibilityState) == true)
+                {
+                    task.completePromise.Resolve();
+                    currentAnimationTask = null;
+                }
             }
         }
 
-        private IPromise StartAnimation(bool newStateIsVisible)
+        private void SetVisible(bool newGoalVisibilityState)
         {
-            if (elementAnimator.UnscaledTime == true)
+            if (currentAnimationTask.HasValue == true)
             {
-                return Timer.Instance.UnityObjectWaitUnscaled(this, GetDuration(), HandleProgress);
-            }
-            else
-            {
-                return Timer.Instance.UnityObjectWait(this, GetDuration(), HandleProgress);
+                AnimationTask task = currentAnimationTask.Value;
+                if (task.goalVisibilityState != newGoalVisibilityState)
+                {
+                    task.completePromise.Reject(new OperationCanceledException());
+                    currentAnimationTask = null;
+                }
             }
 
-            float GetDuration()
+            if (currentAnimationTask.HasValue == false)
             {
-                return newStateIsVisible
-                    ? elementAnimator.ShowAnimationDuration
-                    : elementAnimator.HideAnimationDuration;
-            }
-
-            void HandleProgress(float progress)
-            {
-                if (newStateIsVisible == true)
-                {
-                    ApplyVisibility(progress);
-                }
-                else
-                {
-                    ApplyVisibility(1f - progress);
-                }
+                AnimationTask task;
+                task.goalVisibilityState = newGoalVisibilityState;
+                task.changeSpeed = 1f / (newGoalVisibilityState ? elementAnimator.ShowAnimationDuration : elementAnimator.HideAnimationDuration);
+                task.completePromise = Deferred.GetFromPool();
+                currentAnimationTask = task;
             }
         }
 

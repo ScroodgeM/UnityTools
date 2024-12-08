@@ -14,7 +14,6 @@ namespace UnityTools.UnityRuntime.UI.Element
     {
         internal const float DEFAULT_ANIMATION_DURATION = 0.3f;
         internal bool UnscaledTime => unscaledTime;
-
         internal IStatefulEvent<bool> CurrentVisibility => currentVisibility;
 
         internal float ShowAnimationDuration
@@ -45,7 +44,7 @@ namespace UnityTools.UnityRuntime.UI.Element
 
         private bool visibilitySet = false;
         private readonly StatefulEventInt<bool> currentVisibility = StatefulEventInt.Create(false);
-        private byte lastStateCounter;
+        private byte currentCommandId = 0;
         private IPromise lastStatePromise;
 
         private void Initialize()
@@ -75,7 +74,6 @@ namespace UnityTools.UnityRuntime.UI.Element
         {
             Initialize();
 
-            lastStateCounter = 0;
             lastStatePromise = Deferred.Resolved();
 
             TryDisableWhenInvisible();
@@ -104,7 +102,7 @@ namespace UnityTools.UnityRuntime.UI.Element
 
             unchecked
             {
-                lastStateCounter++;
+                currentCommandId++;
             }
 
             lastStatePromise = Deferred.All(promises).Done(TryDisableWhenInvisible);
@@ -121,7 +119,7 @@ namespace UnityTools.UnityRuntime.UI.Element
 
             if (currentVisibility.Value == false)
             {
-                byte myStateCounter = lastStateCounter;
+                byte myCommandId = currentCommandId;
 
                 if (gameObject.activeInHierarchy == true)
                 {
@@ -136,7 +134,7 @@ namespace UnityTools.UnityRuntime.UI.Element
                 {
                     yield return null;
 
-                    if (myStateCounter == lastStateCounter)
+                    if (myCommandId == currentCommandId)
                     {
                         DoAction();
                     }
