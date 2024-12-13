@@ -1,4 +1,5 @@
 ﻿//this empty line for UTF-8 BOM header
+
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;

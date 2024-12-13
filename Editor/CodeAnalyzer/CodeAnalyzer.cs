@@ -1,4 +1,5 @@
 ﻿//this empty line for UTF-8 BOM header
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -127,6 +128,11 @@ namespace UnityTools.Editor.CodeAnalyzer
             if (lines.Length > 0 && lines[0] != bomPlaceholderLine)
             {
                 ArrayUtility.Insert(ref lines, 0, bomPlaceholderLine);
+            }
+
+            if (lines.Length > 1 && string.IsNullOrEmpty(lines[1]) == false)
+            {
+                ArrayUtility.Insert(ref lines, 1, string.Empty);
             }
         }
 
