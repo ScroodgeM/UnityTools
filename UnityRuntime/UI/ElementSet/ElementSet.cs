@@ -3,13 +3,19 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityTools.UnityRuntime.Helpers;
 using UnityTools.UnityRuntime.UI.Element;
 
 namespace UnityTools.UnityRuntime.UI.ElementSet
 {
     public class ElementSet : MonoBehaviour
     {
+        internal bool DelayInitializeUntilElementBecomesVisible => delayInitializeUntilElementBecomesVisible;
+
+        private event Action OnUpdate = () => { };
+
         [SerializeField] private ElementBase element;
+        [SerializeField] private bool delayInitializeUntilElementBecomesVisible = false;
 
         public ElementSet<T> Typed<T>() where T : ElementBase
         {
@@ -18,7 +24,9 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
                 return default;
             }
 
-            return new ElementSet<T>(this, element as T);
+            ElementSet<T> elementSet = new ElementSet<T>(this, element as T);
+            OnUpdate += () => elementSet.ProcessUpdate();
+            return elementSet;
         }
 
         public ElementSetWithSelectableElements<T> TypedWithSelectableElements<T>() where T : ElementBase, ISelectableElement
@@ -28,7 +36,14 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
                 return default;
             }
 
-            return new ElementSetWithSelectableElements<T>(this, element as T);
+            ElementSetWithSelectableElements<T> elementSet = new ElementSetWithSelectableElements<T>(this, element as T);
+            OnUpdate += () => elementSet.ProcessUpdate();
+            return elementSet;
+        }
+
+        private void Update()
+        {
+            OnUpdate();
         }
 
         private bool ValidateType<T>()
@@ -39,7 +54,7 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
                 return false;
             }
 
-            if ((element is T) == false)
+            if (element is T == false)
             {
                 Debug.LogError($"ElementSet {gameObject.name} can't init with incorrect element type", gameObject);
                 return false;
@@ -60,6 +75,7 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
                     scriptComponent.enabled = false;
                 }
             }
+
             go.hideFlags = HideFlags.DontSave;
             go.SetActive(true);
             return go;
@@ -69,15 +85,26 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
 
     public class ElementSet<T> where T : ElementBase
     {
-        private readonly T elementPrefab;
-        private readonly Transform elementsHolder;
-
-        protected readonly List<T> elementsList = new List<T>();
-
-        public ElementSet(ElementSet wrapper, T elementPrefab)
+        private struct DelayedInitializeUntilElementBecomesVisible
         {
+            public T elementBase;
+            public RectTransform elementTransform;
+            public int elementIndex;
+            public Action<T, int> initializer;
+        }
+
+        private readonly ElementSet elementSet;
+        private readonly RectTransform elementsHolder;
+        private readonly T elementPrefab;
+
+        private readonly List<T> elementsList = new List<T>();
+        private readonly List<DelayedInitializeUntilElementBecomesVisible> delayedInitializes = new List<DelayedInitializeUntilElementBecomesVisible>();
+
+        public ElementSet(ElementSet elementSet, T elementPrefab)
+        {
+            this.elementSet = elementSet;
+            this.elementsHolder = elementSet.transform as RectTransform;
             this.elementPrefab = elementPrefab;
-            this.elementsHolder = wrapper.transform;
         }
 
         public IEnumerable<T> ActiveElements
@@ -102,6 +129,8 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
 
         public void Init(int count, Action<T, int> initializer = null)
         {
+            delayedInitializes.Clear();
+
             for (int i = elementsList.Count; i < count; i++)
             {
                 AddNew();
@@ -109,11 +138,25 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
 
             for (int i = 0; i < count; i++)
             {
-                elementsList[i].SetVisible(true);
+                int elementIndex = i;
+                T element = elementsList[elementIndex];
+                element.SetVisible(true);
 
                 if (initializer != null)
                 {
-                    initializer(elementsList[i], i);
+                    if (elementSet.DelayInitializeUntilElementBecomesVisible == true)
+                    {
+                        DelayedInitializeUntilElementBecomesVisible delayedInitialize;
+                        delayedInitialize.elementBase = elementsList[i];
+                        delayedInitialize.elementTransform = elementsList[i].transform as RectTransform;
+                        delayedInitialize.elementIndex = i;
+                        delayedInitialize.initializer = initializer;
+                        delayedInitializes.Add(delayedInitialize);
+                    }
+                    else
+                    {
+                        initializer(element, elementIndex);
+                    }
                 }
             }
 
@@ -138,6 +181,23 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
             foreach (T element in elementsList)
             {
                 element.transform.SetAsLastSibling();
+            }
+        }
+
+        internal void ProcessUpdate()
+        {
+            for (int i = 0; i < delayedInitializes.Count; i++)
+            {
+                DelayedInitializeUntilElementBecomesVisible delayedInitialize = delayedInitializes[i];
+
+                if (elementsHolder.Overlaps(delayedInitialize.elementTransform) != true)
+                {
+                    continue;
+                }
+
+                delayedInitialize.initializer(delayedInitialize.elementBase, delayedInitialize.elementIndex);
+                delayedInitializes.RemoveAt(i);
+                i--;
             }
         }
 
