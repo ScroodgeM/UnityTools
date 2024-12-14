@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿//this empty line for UTF-8 BOM header
+
+using UnityEngine;
 using UnityTools.UnityRuntime.UI.Element;
 
 namespace UnityTools.UnityRuntime.Helpers

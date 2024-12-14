@@ -16,6 +16,7 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
 
         [SerializeField] private ElementBase element;
         [SerializeField] private bool delayInitializeUntilElementBecomesVisible = false;
+        [SerializeField] private RectTransform customVisibleFrame;
 
         public ElementSet<T> Typed<T>() where T : ElementBase
         {
@@ -39,6 +40,16 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
             ElementSetWithSelectableElements<T> elementSet = new ElementSetWithSelectableElements<T>(this, element as T);
             OnUpdate += () => elementSet.ProcessUpdate();
             return elementSet;
+        }
+
+        internal RectTransform GetVisibleFrame()
+        {
+            if (customVisibleFrame != null)
+            {
+                return customVisibleFrame;
+            }
+
+            return transform as RectTransform;
         }
 
         private void Update()
@@ -94,7 +105,8 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
         }
 
         private readonly ElementSet elementSet;
-        private readonly RectTransform elementsHolder;
+        private readonly Transform elementsHolder;
+        private readonly RectTransform visibleFrame;
         private readonly T elementPrefab;
 
         private readonly List<T> elementsList = new List<T>();
@@ -104,6 +116,7 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
         {
             this.elementSet = elementSet;
             this.elementsHolder = elementSet.transform as RectTransform;
+            this.visibleFrame = elementSet.GetVisibleFrame();
             this.elementPrefab = elementPrefab;
         }
 
@@ -190,7 +203,7 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
             {
                 DelayedInitializeUntilElementBecomesVisible delayedInitialize = delayedInitializes[i];
 
-                if (elementsHolder.Overlaps(delayedInitialize.elementTransform) != true)
+                if (delayedInitialize.elementTransform.Overlaps(visibleFrame) == false)
                 {
                     continue;
                 }
