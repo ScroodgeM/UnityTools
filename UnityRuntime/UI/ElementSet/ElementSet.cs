@@ -197,7 +197,7 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
 
                 delayedInitialize.initializer(delayedInitialize.elementBase, delayedInitialize.elementIndex);
                 delayedInitializes.RemoveAt(i);
-                i--;
+                break;
             }
         }
 
