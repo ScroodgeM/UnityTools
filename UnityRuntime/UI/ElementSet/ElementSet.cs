@@ -96,6 +96,8 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
 
     public class ElementSet<T> where T : ElementBase
     {
+        public event Action<T> OnElementCreated = element => { };
+
         private struct DelayedInitializeUntilElementBecomesVisible
         {
             public T elementBase;
@@ -219,6 +221,7 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
             T element = UnityEngine.Object.Instantiate(elementPrefab, elementsHolder, false);
             element.gameObject.hideFlags = HideFlags.DontSave;
             elementsList.Add(element);
+            OnElementCreated(element);
         }
     }
 }
