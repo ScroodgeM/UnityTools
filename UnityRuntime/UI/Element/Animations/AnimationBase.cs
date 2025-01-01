@@ -49,8 +49,8 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
 
                 if (Mathf.Approximately(currentVisibilityState, goalVisibilityState) == true)
                 {
-                    task.completePromise.Resolve();
                     currentAnimationTask = null;
+                    task.completePromise.Resolve();
                 }
             }
         }
