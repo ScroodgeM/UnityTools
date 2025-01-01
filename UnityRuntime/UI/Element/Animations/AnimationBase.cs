@@ -62,8 +62,8 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
                 AnimationTask task = currentAnimationTask.Value;
                 if (task.goalVisibilityState != newGoalVisibilityState)
                 {
-                    task.completePromise.Reject(new OperationCanceledException());
                     currentAnimationTask = null;
+                    task.completePromise.Reject(new OperationCanceledException());
                 }
             }
 
