@@ -1,11 +1,10 @@
-﻿//this empty line for UTF-8 BOM header
-
 using System;
 using UnityEngine;
 using UnityEditor;
 using System.IO;
 using System.Diagnostics;
 using System.Collections.Generic;
+using UnityEditorInternal;
 
 namespace UnityTools.Editor
 {
@@ -105,7 +104,10 @@ namespace UnityTools.Editor
 
         private static void CreateUml(List<AsmDefStructure> asmDefs, ref string umlDocument)
         {
-            foreach (AsmDefStructure asmDef in asmDefs)
+            List<AsmDefStructure> sortedAsmDefs = new List<AsmDefStructure>(asmDefs);
+            sortedAsmDefs.Sort((a, b) => a.name.Length.CompareTo(b.name.Length));
+
+            foreach (AsmDefStructure asmDef in sortedAsmDefs)
             {
                 umlDocument += $"class {asmDef.name.FormatAsmDefName()} {GetLibraryColor(asmDef)} {{{Environment.NewLine}";
 
@@ -119,9 +121,30 @@ namespace UnityTools.Editor
                 {
                     foreach (string reference in asmDef.references)
                     {
-                        if (GetLibraryType(reference) >= GetLibraryType(asmDef.name))
+                        string referencedAssemblyDefinitionName;
+
+                        const string guidHeader = "GUID:";
+                        if (reference.StartsWith(guidHeader) == true)
                         {
-                            umlDocument += $"{reference.FormatAsmDefName()} <-- {asmDef.name.FormatAsmDefName()}{Environment.NewLine}";
+                            string asmDefPath = AssetDatabase.GUIDToAssetPath(reference.Substring(guidHeader.Length));
+                            if (string.IsNullOrEmpty(asmDefPath) == false)
+                            {
+                                AssemblyDefinitionAsset assemblyDefinition = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(asmDefPath);
+                                referencedAssemblyDefinitionName = assemblyDefinition.name;
+                            }
+                            else
+                            {
+                                continue;
+                            }
+                        }
+                        else
+                        {
+                            referencedAssemblyDefinitionName = reference;
+                        }
+
+                        if (GetLibraryType(referencedAssemblyDefinitionName) >= GetLibraryType(asmDef.name))
+                        {
+                            umlDocument += $"{referencedAssemblyDefinitionName.FormatAsmDefName()} <-- {asmDef.name.FormatAsmDefName()}{Environment.NewLine}";
                         }
                     }
                 }

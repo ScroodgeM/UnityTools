@@ -1,5 +1,3 @@
-﻿//this empty line for UTF-8 BOM header
-
 using System.IO;
 using UnityEngine;
 

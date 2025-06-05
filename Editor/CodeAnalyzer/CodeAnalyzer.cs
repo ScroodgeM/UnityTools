@@ -1,5 +1,3 @@
-﻿//this empty line for UTF-8 BOM header
-
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -21,7 +19,6 @@ namespace UnityTools.Editor.CodeAnalyzer
         private const string colorend = "</color>";
         private const int methodParametersCountLimit = 2;
         private const int methodOutParametersCountLimit = 1;
-        private const string bomPlaceholderLine = "//this empty line for UTF-8 BOM header";
 
         private static string rootNamespace => EditorSettings.projectGenerationRootNamespace;
 
@@ -64,7 +61,7 @@ namespace UnityTools.Editor.CodeAnalyzer
                 if (folder == scriptsFolder)
                 {
                     AnalyzeCSharpFile(filePath, ref lines, ref switchConditions, ref methodTooLongMessages);
-                    File.WriteAllLines(filePath, lines, new UTF8Encoding(true));
+                    File.WriteAllLines(filePath, lines, new UTF8Encoding(false));
                 }
 
                 WriteStatistic(ref statisticPerFolder, rootFolder, lines.Length);
@@ -83,7 +80,6 @@ namespace UnityTools.Editor.CodeAnalyzer
             RemoveEmptyDoubleLines(ref lines);
             RemoveEmptyLinesAtTheBegin(ref lines);
             RemoveEmptyLinesAtTheEnd(ref lines);
-            MakeSureWeHaveBomPlaceholderLineAtTheBegin(ref lines);
             RemoveTrailingSpaces(ref lines);
             AnalyzeToDo(filePath, ref lines);
             AnalyzeNotImplemented(filePath, ref lines);
@@ -120,19 +116,6 @@ namespace UnityTools.Editor.CodeAnalyzer
             while (lines.Length > 0 && string.IsNullOrEmpty(lines[lines.Length - 1]) == true)
             {
                 ArrayUtility.RemoveAt(ref lines, lines.Length - 1);
-            }
-        }
-
-        private static void MakeSureWeHaveBomPlaceholderLineAtTheBegin(ref string[] lines)
-        {
-            if (lines.Length > 0 && lines[0] != bomPlaceholderLine)
-            {
-                ArrayUtility.Insert(ref lines, 0, bomPlaceholderLine);
-            }
-
-            if (lines.Length > 1 && string.IsNullOrEmpty(lines[1]) == false)
-            {
-                ArrayUtility.Insert(ref lines, 1, string.Empty);
             }
         }
 

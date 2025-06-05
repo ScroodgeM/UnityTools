@@ -2,8 +2,8 @@
     "name": "com.Scroodge.UnityTools.Editor",
     "rootNamespace": "UnityTools",
     "references": [
-        "com.Scroodge.UnityTools.Runtime",
-        "com.Scroodge.UnityTools.UnityRuntime"
+        "GUID:a27d86e5631b0bd4db783c0ddfbdc353",
+        "GUID:e67b6f0445134784cb5c541bb8b6a89a"
     ],
     "includePlatforms": [
         "Editor"

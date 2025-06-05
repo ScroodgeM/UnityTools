@@ -2,7 +2,7 @@
     "name": "com.Scroodge.UnityTools.UnityRuntime",
     "rootNamespace": "UnityTools",
     "references": [
-        "com.Scroodge.UnityTools.Runtime"
+        "GUID:a27d86e5631b0bd4db783c0ddfbdc353"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
