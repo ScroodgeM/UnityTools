@@ -33,6 +33,7 @@ namespace UnityTools.Editor
             "com.Scroodge.UnityTools.Editor",
             "com.Scroodge.UnityTools.Runtime",
             "com.Scroodge.UnityTools.UnityRuntime",
+            "com.Scroodge.UnityTools.Examples",
         };
 
         [MenuItem(nameof(UnityTools) + "/Generate UML with library references and open it in browser")]

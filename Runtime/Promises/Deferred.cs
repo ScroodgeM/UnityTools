@@ -81,7 +81,7 @@ namespace UnityTools.Runtime.Promises
 
         public static IPromise All(params IPromise[] collection) => AllInternal(collection);
 
-        public static IPromise All(List<IPromise> collection) => AllInternal(collection);
+        public static IPromise All(ICollection<IPromise> collection) => AllInternal(collection);
 
         private static IPromise AllInternal(ICollection<IPromise> collection)
         {
@@ -119,21 +119,25 @@ namespace UnityTools.Runtime.Promises
             return deferred;
         }
 
-        public static IPromise Race(params IPromise[] collection)
+        public static IPromise Race(params IPromise[] collection) => RaceInternal(collection);
+
+        public static IPromise Race(ICollection<IPromise> collection) => RaceInternal(collection);
+
+        private static IPromise RaceInternal(ICollection<IPromise> collection)
         {
             Deferred deferred = GetFromPool();
 
-            if (collection.Length == 0)
+            if (collection.Count == 0)
             {
                 deferred.Reject(new Exception("Deferred.Race called with empty array - no winner"));
             }
             else
             {
-                int promisesToWait = collection.Length;
+                int promisesToWait = collection.Count;
 
-                for (int i = 0, maxi = collection.Length - 1; i <= maxi; i++)
+                foreach (IPromise element in collection)
                 {
-                    collection[i].Done(() =>
+                    element.Done(() =>
                     {
                         if (deferred.CurrentState == States.Pending)
                         {
@@ -141,7 +145,7 @@ namespace UnityTools.Runtime.Promises
                         }
                     });
 
-                    collection[i].Fail(ex =>
+                    element.Fail(ex =>
                     {
                         promisesToWait--;
                         if (deferred.CurrentState == States.Pending && promisesToWait == 0)

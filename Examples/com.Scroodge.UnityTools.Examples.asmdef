@@ -1,0 +1,17 @@
+{
+    "name": "com.Scroodge.UnityTools.Examples",
+    "rootNamespace": "UnityTools",
+    "references": [
+        "GUID:a27d86e5631b0bd4db783c0ddfbdc353",
+        "GUID:e67b6f0445134784cb5c541bb8b6a89a"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
