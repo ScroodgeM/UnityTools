@@ -9,17 +9,25 @@ namespace UnityTools.UnityRuntime.StatefulEvent
         {
             return new StatefulEventInt<Vector2Int>(defaultValue, (a, b) => a == b);
         }
+
         public static StatefulEventInt<Vector3Int> Create(Vector3Int defaultValue)
         {
             return new StatefulEventInt<Vector3Int>(defaultValue, (a, b) => a == b);
         }
+
         public static StatefulEventInt<Vector2> Create(Vector2 defaultValue)
         {
             return new StatefulEventInt<Vector2>(defaultValue, (a, b) => a == b);
         }
+
         public static StatefulEventInt<Vector3> Create(Vector3 defaultValue)
         {
             return new StatefulEventInt<Vector3>(defaultValue, (a, b) => a == b);
+        }
+
+        public static StatefulEventInt<Color> Create(Color defaultValue)
+        {
+            return new StatefulEventInt<Color>(defaultValue, (a, b) => a == b);
         }
     }
 }

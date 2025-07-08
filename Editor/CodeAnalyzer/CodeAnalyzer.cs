@@ -61,7 +61,8 @@ namespace UnityTools.Editor.CodeAnalyzer
                 if (folder == scriptsFolder)
                 {
                     AnalyzeCSharpFile(filePath, ref lines, ref switchConditions, ref methodTooLongMessages);
-                    File.WriteAllLines(filePath, lines, new UTF8Encoding(false));
+                    string fileContent = String.Join("\r\n", lines);
+                    File.WriteAllText(filePath, fileContent, new UTF8Encoding(false));
                 }
 
                 WriteStatistic(ref statisticPerFolder, rootFolder, lines.Length);
