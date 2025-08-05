@@ -1,34 +1,55 @@
 using System;
+using System.Threading;
 using UnityEngine;
 
 namespace UnityTools.UnityRuntime.Cache
 {
     internal abstract class DiskStorageBase<T>
     {
-        private const int IDLE_TIME_BEFORE_SAVE_TO_DISK = 5;
-        private const int MAX_SECONDS_WITHOUT_SAVE_TO_DISK = 60;
-
-        private readonly string cacheId;
-
-        internal DiskStorageBase(string cacheId, IUnityInvocations unityInvocations)
+        private enum State : byte
         {
-            this.cacheId = cacheId;
-
-            unityInvocations.OnUpdateEvent += Update;
-            unityInvocations.OnApplicationPauseEvent += TrySaveNow;
-            unityInvocations.OnDestroyEvent += TrySaveNow;
+            StopSignal = 0,
+            Idle = 55,
+            WriteDataScheduled = 75,
+            WipeDataScheduled = 76,
         }
 
-        private float? firstSaveCommandTime = null;
-        private float? lastSaveCommandTime = null;
+        private readonly DiskStorageSettings settings;
+        private readonly string filePath;
 
-        private bool saveCandidateExists = false;
-        private T saveCandidate;
+        private object locker = new object();
+        private State currentState = State.Idle;
+        private DateTime nextWriteToDiskTime = DateTime.UtcNow;
+        private T dataToWrite;
+
+        internal DiskStorageBase(string cacheId, IUnityInvocations unityInvocations, DiskStorageSettings settings, string fileExtension)
+        {
+            this.settings = settings;
+            this.filePath = System.IO.Path.Combine(Application.persistentDataPath, $"{cacheId}.{fileExtension}");
+
+            if (settings.useDedicatedThread == true)
+            {
+                new Thread(WriterThread).Start();
+
+                unityInvocations.OnDestroyEvent += () =>
+                {
+                    lock (locker)
+                    {
+                        WriteDataToDiskNow();
+                        currentState = State.StopSignal;
+                    }
+                };
+            }
+            else
+            {
+                unityInvocations.OnUpdateEvent += WriteDataToDisk;
+                unityInvocations.OnApplicationPauseEvent += WriteDataToDiskNow;
+                unityInvocations.OnDestroyEvent += WriteDataToDiskNow;
+            }
+        }
 
         internal bool TryLoad(out T value)
         {
-            string filePath = GetFilePath();
-
             if (System.IO.File.Exists(filePath) == false)
             {
                 value = default;
@@ -50,74 +71,68 @@ namespace UnityTools.UnityRuntime.Cache
 
         internal void Save(T value)
         {
-            if (firstSaveCommandTime.HasValue == false)
+            lock (locker)
             {
-                firstSaveCommandTime = Time.unscaledTime;
+                dataToWrite = value;
+                currentState = State.WriteDataScheduled;
             }
-
-            lastSaveCommandTime = Time.unscaledTime;
-
-            saveCandidateExists = true;
-            saveCandidate = value;
         }
 
         internal void Clear()
         {
-            if (firstSaveCommandTime.HasValue == false)
+            lock (locker)
             {
-                firstSaveCommandTime = Time.unscaledTime;
+                dataToWrite = default;
+                currentState = State.WipeDataScheduled;
             }
-
-            lastSaveCommandTime = Time.unscaledTime;
-
-            saveCandidateExists = false;
-            saveCandidate = default;
         }
-
-        protected abstract string GetFileExtension();
 
         protected abstract T ReadDataFromDisk(string filePath);
 
         protected abstract void WriteDataToDisk(string filePath, T data);
 
-        private void Update()
+        private void WriteDataToDisk()
         {
-            if (
-                firstSaveCommandTime.HasValue && Time.unscaledTime > firstSaveCommandTime.Value + MAX_SECONDS_WITHOUT_SAVE_TO_DISK
-                ||
-                lastSaveCommandTime.HasValue && Time.unscaledTime > lastSaveCommandTime.Value + IDLE_TIME_BEFORE_SAVE_TO_DISK
-            )
+            if (currentState == State.Idle || nextWriteToDiskTime < DateTime.UtcNow)
             {
-                SaveNow();
+                return;
+            }
+
+            WriteDataToDiskNow();
+            nextWriteToDiskTime = DateTime.UtcNow.AddSeconds(settings.writeToDiskInterval);
+        }
+
+        private void WriterThread()
+        {
+            while (currentState != State.StopSignal)
+            {
+                if (currentState == State.Idle)
+                {
+                    Thread.Sleep(settings.writeToDiskInterval * 1000);
+                    continue;
+                }
+
+                lock (locker)
+                {
+                    WriteDataToDiskNow();
+                }
             }
         }
 
-        private void TrySaveNow()
+        private void WriteDataToDiskNow()
         {
-            if (firstSaveCommandTime.HasValue == true || lastSaveCommandTime.HasValue == true)
+            switch (currentState)
             {
-                SaveNow();
+                case State.WipeDataScheduled:
+                    System.IO.File.Delete(filePath);
+                    currentState = State.Idle;
+                    break;
+
+                case State.WriteDataScheduled:
+                    WriteDataToDisk(filePath, dataToWrite);
+                    currentState = State.Idle;
+                    break;
             }
         }
-
-        private void SaveNow()
-        {
-            string filePath = GetFilePath();
-
-            if (saveCandidateExists == true)
-            {
-                WriteDataToDisk(filePath, saveCandidate);
-                saveCandidate = default;
-            }
-            else
-            {
-                System.IO.File.Delete(filePath);
-            }
-
-            firstSaveCommandTime = null;
-            lastSaveCommandTime = null;
-        }
-
-        private string GetFilePath() => System.IO.Path.Combine(Application.persistentDataPath, $"{cacheId}.{GetFileExtension()}");
     }
 }

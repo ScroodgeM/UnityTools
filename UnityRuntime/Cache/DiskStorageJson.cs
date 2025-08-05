@@ -5,11 +5,9 @@ namespace UnityTools.UnityRuntime.Cache
 {
     internal class DiskStorageJson<T> : DiskStorageBase<T>
     {
-        public DiskStorageJson(string cacheId, IUnityInvocations unityInvocations) : base(cacheId, unityInvocations)
+        public DiskStorageJson(string cacheId, IUnityInvocations unityInvocations, DiskStorageSettings settings) : base(cacheId, unityInvocations, settings, "json")
         {
         }
-
-        protected override string GetFileExtension() => "json";
 
         protected override T ReadDataFromDisk(string filePath) => JsonUtility.FromJson<T>(File.ReadAllText(filePath));
 

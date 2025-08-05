@@ -20,7 +20,7 @@ namespace UnityTools.UnityRuntime.Cache
         private bool hasCachedValue;
         private T cachedValue;
 
-        internal CacheStorage(string cacheId, bool rememberBetweenSessions, IUnityInvocations unityInvocations)
+        internal CacheStorage(string cacheId, bool rememberBetweenSessions, IUnityInvocations unityInvocations, DiskStorageSettings settings)
         {
             this.cacheId = cacheId;
 
@@ -28,11 +28,11 @@ namespace UnityTools.UnityRuntime.Cache
             {
                 if (typeof(T) == typeof(Texture2D))
                 {
-                    diskStorage = new DiskStorageTexture2D(cacheId, unityInvocations) as DiskStorageBase<T>;
+                    diskStorage = new DiskStorageTexture2D(cacheId, unityInvocations, settings) as DiskStorageBase<T>;
                 }
                 else
                 {
-                    diskStorage = new DiskStorageJson<T>(cacheId, unityInvocations);
+                    diskStorage = new DiskStorageJson<T>(cacheId, unityInvocations, settings);
                 }
 
                 hasCachedValue = diskStorage.TryLoad(out cachedValue);

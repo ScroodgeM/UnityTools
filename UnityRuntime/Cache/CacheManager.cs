@@ -10,6 +10,8 @@ namespace UnityTools.UnityRuntime.Cache
         public event Action OnApplicationPauseEvent = () => { };
         public event Action OnDestroyEvent = () => { };
 
+        [SerializeField] private DiskStorageSettings diskStorageSettings;
+
         private readonly Dictionary<string, ICacheStorage> cacheStoragesCache = new Dictionary<string, ICacheStorage>();
 
         private void Update() => OnUpdateEvent();
@@ -35,7 +37,7 @@ namespace UnityTools.UnityRuntime.Cache
 
             if (cacheStoragesCache.TryGetValue(cacheId, out ICacheStorage existingCacheStorage) == false)
             {
-                CacheStorage<T> cacheStorage = new CacheStorage<T>(cacheId, rememberBetweenSessions, this);
+                CacheStorage<T> cacheStorage = new CacheStorage<T>(cacheId, rememberBetweenSessions, this, diskStorageSettings);
                 cacheStoragesCache.Add(cacheId, cacheStorage);
                 return cacheStorage;
             }
