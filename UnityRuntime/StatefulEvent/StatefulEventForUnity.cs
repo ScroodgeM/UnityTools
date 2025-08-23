@@ -25,6 +25,11 @@ namespace UnityTools.UnityRuntime.StatefulEvent
             return new StatefulEventInt<Vector3>(defaultValue, (a, b) => a == b);
         }
 
+        public static StatefulEventInt<Quaternion> Create(Quaternion defaultValue)
+        {
+            return new StatefulEventInt<Quaternion>(defaultValue, (a, b) => a == b);
+        }
+
         public static StatefulEventInt<Color> Create(Color defaultValue)
         {
             return new StatefulEventInt<Color>(defaultValue, (a, b) => a == b);
