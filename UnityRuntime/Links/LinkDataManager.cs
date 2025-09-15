@@ -7,7 +7,7 @@ namespace UnityTools.UnityRuntime.Links
     public class LinkDataManager<TL, TD> where TL : LinkBase where TD : UnityEngine.Object
     {
         private readonly bool useCache;
-        private readonly Dictionary<TL, TD> cache = new Dictionary<TL, TD>();
+        private readonly Dictionary<string, TD> cache = new Dictionary<string, TD>();
 
         public LinkDataManager(bool useCache = true)
         {
@@ -21,10 +21,10 @@ namespace UnityTools.UnityRuntime.Links
                 return LoadFromResources(link);
             }
 
-            if (cache.TryGetValue(link, out TD cachedObject) == false)
+            if (cache.TryGetValue(link.LinkedObjectId, out TD cachedObject) == false)
             {
                 cachedObject = LoadFromResources(link);
-                cache.Add(link, cachedObject);
+                cache.Add(link.LinkedObjectId, cachedObject);
             }
 
             return cachedObject;
