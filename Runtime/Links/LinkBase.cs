@@ -1,7 +1,9 @@
+using System;
 using System.IO;
 
 namespace UnityTools.Runtime.Links
 {
+    [Serializable]
     public abstract class LinkBase
     {
         public const string EmptyLinkKeyword = "null";
