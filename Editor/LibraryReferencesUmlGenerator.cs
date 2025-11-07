@@ -12,9 +12,11 @@ namespace UnityTools.Editor
     {
         private enum LibraryType : byte
         {
-            Myself = 3,
-            Shared = 10,
-            Project = 20,
+            Self = 3,
+            Unity = 10,
+            ThirdParty = 20,
+            ProjectShared = 30,
+            Project = 40,
         }
 
         [Serializable]
@@ -26,9 +28,17 @@ namespace UnityTools.Editor
             public bool noEngineReferences;
         }
 
-        private static string[] sharedLibraries;
+        [Serializable]
+        private struct Config
+        {
+            public string[] unityLibraries;
+            public string[] thirdPartyLibraries;
+            public string[] projectSharedLibraries;
+        }
 
-        private static readonly string[] myLibraries = new string[]
+        private static Config config;
+
+        private static readonly string[] selfLibraries = new string[]
         {
             "com.Scroodge.UnityTools.Editor",
             "com.Scroodge.UnityTools.Runtime",
@@ -74,17 +84,11 @@ namespace UnityTools.Editor
 
         private static void FillSharedLibraries()
         {
-            string pathToSharedLibrariesList = Path.Combine(Application.dataPath, "shared_libraries.txt");
+            string pathToConfig = Path.Combine(Application.dataPath, "uml_generator_config.json");
 
-            if (File.Exists(pathToSharedLibrariesList) == true)
-            {
-                sharedLibraries = File.ReadAllLines(pathToSharedLibrariesList);
-            }
-            else
-            {
-                File.WriteAllText(pathToSharedLibrariesList, string.Empty);
-                sharedLibraries = new string[0];
-            }
+            config = File.Exists(pathToConfig) ? JsonUtility.FromJson<Config>(File.ReadAllText(pathToConfig)) : default;
+
+            File.WriteAllText(pathToConfig, JsonUtility.ToJson(config, true));
         }
 
         private static void ParseDirectory(string directoryPath, ref List<AsmDefStructure> asmDefs)
@@ -105,11 +109,13 @@ namespace UnityTools.Editor
 
         private static void CreateUml(List<AsmDefStructure> asmDefs, ref string umlDocument)
         {
-            List<AsmDefStructure> sortedAsmDefs = new List<AsmDefStructure>(asmDefs);
-            sortedAsmDefs.Sort((a, b) => a.name.Length.CompareTo(b.name.Length));
+            asmDefs = new List<AsmDefStructure>(asmDefs);
+            asmDefs.Sort((a, b) => a.name.Length.CompareTo(b.name.Length));
 
-            foreach (AsmDefStructure asmDef in sortedAsmDefs)
+            for (var i = 0; i < asmDefs.Count; i++)
             {
+                AsmDefStructure asmDef = asmDefs[i];
+
                 umlDocument += $"class {asmDef.name.FormatAsmDefName()} {GetLibraryColor(asmDef)} {{{Environment.NewLine}";
 
                 umlDocument += GetLibraryBody(asmDef) + Environment.NewLine;
@@ -143,6 +149,11 @@ namespace UnityTools.Editor
                             referencedAssemblyDefinitionName = reference;
                         }
 
+                        if (asmDefs.Exists(x => x.name == referencedAssemblyDefinitionName) == false)
+                        {
+                            asmDefs.Add(CreateAsmDefFromReference(referencedAssemblyDefinitionName));
+                        }
+
                         if (GetLibraryType(referencedAssemblyDefinitionName) >= GetLibraryType(asmDef.name))
                         {
                             umlDocument += $"{referencedAssemblyDefinitionName.FormatAsmDefName()} <-- {asmDef.name.FormatAsmDefName()}{Environment.NewLine}";
@@ -154,18 +165,38 @@ namespace UnityTools.Editor
             }
         }
 
-        private static string FormatAsmDefName(this string name) => name.Replace("-", "_").Replace(".", "_");
+        private static AsmDefStructure CreateAsmDefFromReference(string name)
+        {
+            AsmDefStructure result;
+            result.name = name;
+            result.noEngineReferences = false;
+            result.autoReferenced = true;
+            result.references = Array.Empty<string>();
+            return result;
+        }
+
+        private static string FormatAsmDefName(this string name) => $"{GetLibraryType(name)}." + name.Replace("-", "_").Replace(".", "_");
 
         private static LibraryType GetLibraryType(string libraryName)
         {
-            if (Array.Exists(myLibraries, x => x == libraryName))
+            if (Array.Exists(selfLibraries, x => x == libraryName))
             {
-                return LibraryType.Myself;
+                return LibraryType.Self;
             }
 
-            if (Array.Exists(sharedLibraries, x => x == libraryName))
+            if (config.unityLibraries != null && Array.Exists(config.unityLibraries, x => x == libraryName))
             {
-                return LibraryType.Shared;
+                return LibraryType.Unity;
+            }
+
+            if (config.thirdPartyLibraries != null && Array.Exists(config.thirdPartyLibraries, x => x == libraryName))
+            {
+                return LibraryType.ThirdParty;
+            }
+
+            if (config.projectSharedLibraries != null && Array.Exists(config.projectSharedLibraries, x => x == libraryName))
+            {
+                return LibraryType.ProjectShared;
             }
 
             return LibraryType.Project;
@@ -182,15 +213,23 @@ namespace UnityTools.Editor
 
             switch (GetLibraryType(library.name))
             {
-                case LibraryType.Myself:
+                case LibraryType.Self:
                     result += ", UnityTools";
                     break;
 
-                case LibraryType.Project:
+                case LibraryType.Unity:
+                    result += ", Unity";
                     break;
 
-                case LibraryType.Shared:
-                    result += ", Shared";
+                case LibraryType.ThirdParty:
+                    result += ", ThirdParty";
+                    break;
+
+                case LibraryType.ProjectShared:
+                    result += ", ProjectShared";
+                    break;
+
+                case LibraryType.Project:
                     break;
             }
 
@@ -199,15 +238,32 @@ namespace UnityTools.Editor
 
         private static string GetLibraryColor(AsmDefStructure library)
         {
-            string secondColor = library.noEngineReferences ? "40fafa" : "fafa40";
+            Color secondColor = library.noEngineReferences ? new Color(0.25f, 0.95f, 0.95f) : new Color(0.95f, 0.95f, 0.25f);
 
+            Color firstColor;
             switch (GetLibraryType(library.name))
             {
-                case LibraryType.Myself: return $"#ad2fff/{secondColor}";
-                case LibraryType.Shared: return $"#adff2f/{secondColor}";
-                case LibraryType.Project: return $"#ffffff/{secondColor}";
-                default: return $"#808080/{secondColor}";
+                case LibraryType.Self:
+                    firstColor = new Color(0.25f, 0.75f, 1.0f);
+                    break;
+                case LibraryType.Unity:
+                    firstColor = new Color(1.0f, 0.5f, 0.75f);
+                    break;
+                case LibraryType.ThirdParty:
+                    firstColor = new Color(1.0f, 0.7f, 0.25f);
+                    break;
+                case LibraryType.ProjectShared:
+                    firstColor = new Color(0.75f, 1.0f, 0.25f);
+                    break;
+                case LibraryType.Project:
+                    firstColor = new Color(1.0f, 1.0f, 1.0f);
+                    break;
+                default:
+                    firstColor = new Color(0.5f, 0.5f, 0.5f);
+                    break;
             }
+
+            return $"#{ColorUtility.ToHtmlStringRGB(firstColor)}/{ColorUtility.ToHtmlStringRGB(secondColor)}";
         }
 
         private static string GetPathToUMLFile()
