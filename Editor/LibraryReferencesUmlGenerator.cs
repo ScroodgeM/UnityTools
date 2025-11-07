@@ -154,7 +154,7 @@ namespace UnityTools.Editor
             }
         }
 
-        private static string FormatAsmDefName(this string name) => name.Replace("-", "_");
+        private static string FormatAsmDefName(this string name) => name.Replace("-", "_").Replace(".", "_");
 
         private static LibraryType GetLibraryType(string libraryName)
         {
