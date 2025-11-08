@@ -17,6 +17,7 @@ namespace UnityTools.Editor
             ThirdParty = 20,
             ProjectShared = 30,
             Project = 40,
+            ProjectEditor = 50,
         }
 
         [Serializable]
@@ -34,6 +35,7 @@ namespace UnityTools.Editor
             public string[] unityLibraries;
             public string[] thirdPartyLibraries;
             public string[] projectSharedLibraries;
+            public string[] projectEditorLibraries;
         }
 
         private static Config config;
@@ -64,6 +66,8 @@ namespace UnityTools.Editor
             umlDocument += "@startuml" + Environment.NewLine;
 
             umlDocument += "scale max 1920*1080" + Environment.NewLine;
+
+            umlDocument += "!theme crt-green" + Environment.NewLine;
 
             umlDocument += Environment.NewLine;
 
@@ -110,7 +114,7 @@ namespace UnityTools.Editor
         private static void CreateUml(List<AsmDefStructure> asmDefs, ref string umlDocument)
         {
             asmDefs = new List<AsmDefStructure>(asmDefs);
-            asmDefs.Sort((a, b) => a.name.Length.CompareTo(b.name.Length));
+            asmDefs.Sort((a, b) => a.name.FormatAsmDefName().CompareTo(b.name.FormatAsmDefName()));
 
             for (var i = 0; i < asmDefs.Count; i++)
             {
@@ -229,6 +233,10 @@ namespace UnityTools.Editor
                     result += ", ProjectShared";
                     break;
 
+                case LibraryType.ProjectEditor:
+                    result += ", ProjectEditor";
+                    break;
+
                 case LibraryType.Project:
                     break;
             }
@@ -238,28 +246,31 @@ namespace UnityTools.Editor
 
         private static string GetLibraryColor(AsmDefStructure library)
         {
-            Color secondColor = library.noEngineReferences ? new Color(0.25f, 0.95f, 0.95f) : new Color(0.95f, 0.95f, 0.25f);
+            Color secondColor = library.noEngineReferences ? new Color(0.05f, 0.20f, 0.05f) : new Color(0.20f, 0.05f, 0.05f);
 
             Color firstColor;
             switch (GetLibraryType(library.name))
             {
                 case LibraryType.Self:
-                    firstColor = new Color(0.25f, 0.75f, 1.0f);
+                    firstColor = new Color(0.10f, 0.30f, 0.40f);
                     break;
                 case LibraryType.Unity:
-                    firstColor = new Color(1.0f, 0.5f, 0.75f);
+                    firstColor = new Color(0.40f, 0.10f, 0.30f);
                     break;
                 case LibraryType.ThirdParty:
-                    firstColor = new Color(1.0f, 0.7f, 0.25f);
+                    firstColor = new Color(0.40f, 0.30f, 0.10f);
                     break;
                 case LibraryType.ProjectShared:
-                    firstColor = new Color(0.75f, 1.0f, 0.25f);
+                    firstColor = new Color(0.30f, 0.40f, 0.10f);
                     break;
                 case LibraryType.Project:
-                    firstColor = new Color(1.0f, 1.0f, 1.0f);
+                    firstColor = new Color(0.40f, 0.40f, 0.40f);
+                    break;
+                case LibraryType.ProjectEditor:
+                    firstColor = new Color(0.30f, 0.10f, 0.40f);
                     break;
                 default:
-                    firstColor = new Color(0.5f, 0.5f, 0.5f);
+                    firstColor = new Color(0.10f, 0.30f, 0.30f);
                     break;
             }
 
