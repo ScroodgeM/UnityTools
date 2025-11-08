@@ -203,6 +203,11 @@ namespace UnityTools.Editor
                 return LibraryType.ProjectShared;
             }
 
+            if (config.projectEditorLibraries != null && Array.Exists(config.projectEditorLibraries, x => x == libraryName))
+            {
+                return LibraryType.ProjectEditor;
+            }
+
             return LibraryType.Project;
         }
 
