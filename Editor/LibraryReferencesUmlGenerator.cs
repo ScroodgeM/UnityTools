@@ -3,10 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Diagnostics;
 using System.Reflection;
-using System.Reflection.Emit;
-using System.Text;
 using UnityEngine;
-using UnityEditor;
 
 namespace UnityTools.Editor
 {
@@ -54,7 +51,7 @@ namespace UnityTools.Editor
             "com.Scroodge.UnityTools.Examples",
         };
 
-        [MenuItem(nameof(UnityTools) + "/Generate UML with assembly references and open it in browser")]
+        [UnityEditor.MenuItem(nameof(UnityTools) + "/Generate UML with assembly references and open it in browser")]
         private static void GenerateUMLAndOpenItInBrowser()
         {
             GenerateUML();
@@ -62,12 +59,12 @@ namespace UnityTools.Editor
             Process.Start("chrome.exe", $"--allow-file-access-from-files file://{GetPathToUMLFile()}");
         }
 
-        [MenuItem(nameof(UnityTools) + "/Generate UML with assembly references")]
+        [UnityEditor.MenuItem(nameof(UnityTools) + "/Generate UML with assembly references")]
         private static void GenerateUML()
         {
             ReadConfig();
 
-            StringBuilder umlDocument = new StringBuilder();
+            System.Text.StringBuilder umlDocument = new System.Text.StringBuilder();
 
             umlDocument.AppendLine("@startuml");
 
@@ -97,7 +94,7 @@ namespace UnityTools.Editor
             File.WriteAllText(pathToConfig, JsonUtility.ToJson(config, true));
         }
 
-        private static void CreateUml(Assembly[] assemblies, ref StringBuilder umlDocument)
+        private static void CreateUml(Assembly[] assemblies, ref System.Text.StringBuilder umlDocument)
         {
             List<Assembly> assembliesSorted = new List<Assembly>(assemblies);
 
@@ -132,11 +129,20 @@ namespace UnityTools.Editor
 
                 umlDocument.AppendLine();
             }
+
+            if (config.hiddenAssemblies != null)
+            {
+                foreach (string hiddenAssembly in config.hiddenAssemblies)
+                {
+                    umlDocument.AppendLine("remove " + hiddenAssembly);
+                }
+            }
         }
 
         private static Assembly CreateAssemblyFromName(AssemblyName assemblyName)
         {
-            return AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.ReflectionOnly);
+            return System.Reflection.Emit.AssemblyBuilder
+                .DefineDynamicAssembly(assemblyName, System.Reflection.Emit.AssemblyBuilderAccess.ReflectionOnly);
         }
 
         private static string FormatAssemblyName(this Assembly assembly) => assembly.GetName().FormatAssemblyName();
