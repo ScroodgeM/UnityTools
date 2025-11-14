@@ -17,6 +17,7 @@ namespace UnityTools.Editor
             ThirdParty = 20,
             ProjectShared = 30,
             Project = 40,
+            ThirdPartyEditor = 45,
             ProjectEditor = 50,
         }
 
@@ -32,10 +33,19 @@ namespace UnityTools.Editor
         [Serializable]
         private struct Config
         {
+            [Serializable]
+            public struct ColorHighlight
+            {
+                public Color color;
+                public string[] libraries;
+            }
+
             public string[] unityLibraries;
             public string[] thirdPartyLibraries;
+            public string[] thirdPartyEditorLibraries;
             public string[] projectSharedLibraries;
             public string[] projectEditorLibraries;
+            public ColorHighlight[] colorHighlights;
         }
 
         private static Config config;
@@ -116,7 +126,7 @@ namespace UnityTools.Editor
             asmDefs = new List<AsmDefStructure>(asmDefs);
             asmDefs.Sort((a, b) => a.name.FormatAsmDefName().CompareTo(b.name.FormatAsmDefName()));
 
-            for (var i = 0; i < asmDefs.Count; i++)
+            for (int i = 0; i < asmDefs.Count; i++)
             {
                 AsmDefStructure asmDef = asmDefs[i];
 
@@ -183,31 +193,12 @@ namespace UnityTools.Editor
 
         private static LibraryType GetLibraryType(string libraryName)
         {
-            if (Array.Exists(selfLibraries, x => x == libraryName))
-            {
-                return LibraryType.Self;
-            }
-
-            if (config.unityLibraries != null && Array.Exists(config.unityLibraries, x => x == libraryName))
-            {
-                return LibraryType.Unity;
-            }
-
-            if (config.thirdPartyLibraries != null && Array.Exists(config.thirdPartyLibraries, x => x == libraryName))
-            {
-                return LibraryType.ThirdParty;
-            }
-
-            if (config.projectSharedLibraries != null && Array.Exists(config.projectSharedLibraries, x => x == libraryName))
-            {
-                return LibraryType.ProjectShared;
-            }
-
-            if (config.projectEditorLibraries != null && Array.Exists(config.projectEditorLibraries, x => x == libraryName))
-            {
-                return LibraryType.ProjectEditor;
-            }
-
+            if (IsIn(libraryName, config.unityLibraries)) return LibraryType.Unity;
+            if (IsIn(libraryName, config.thirdPartyLibraries)) return LibraryType.ThirdParty;
+            if (IsIn(libraryName, config.projectSharedLibraries)) return LibraryType.ProjectShared;
+            if (IsIn(libraryName, config.thirdPartyEditorLibraries)) return LibraryType.ThirdPartyEditor;
+            if (IsIn(libraryName, config.projectEditorLibraries)) return LibraryType.ProjectEditor;
+            if (IsIn(libraryName, selfLibraries)) return LibraryType.Self;
             return LibraryType.Project;
         }
 
@@ -217,34 +208,12 @@ namespace UnityTools.Editor
 
             if (library.autoReferenced == true)
             {
-                result += ", auto-referenced";
+                result += ", ";
+                result += "auto-referenced";
             }
 
-            switch (GetLibraryType(library.name))
-            {
-                case LibraryType.Self:
-                    result += ", UnityTools";
-                    break;
-
-                case LibraryType.Unity:
-                    result += ", Unity";
-                    break;
-
-                case LibraryType.ThirdParty:
-                    result += ", ThirdParty";
-                    break;
-
-                case LibraryType.ProjectShared:
-                    result += ", ProjectShared";
-                    break;
-
-                case LibraryType.ProjectEditor:
-                    result += ", ProjectEditor";
-                    break;
-
-                case LibraryType.Project:
-                    break;
-            }
+            result += ", ";
+            result += GetLibraryType(library.name).ToString();
 
             return result;
         }
@@ -253,33 +222,46 @@ namespace UnityTools.Editor
         {
             Color secondColor = library.noEngineReferences ? new Color(0.05f, 0.20f, 0.05f) : new Color(0.20f, 0.05f, 0.05f);
 
-            Color firstColor;
-            switch (GetLibraryType(library.name))
+            Color firstColor = GetLibraryTypeColor(GetLibraryType(library.name));
+            if (config.colorHighlights != null)
             {
-                case LibraryType.Self:
-                    firstColor = new Color(0.10f, 0.30f, 0.40f);
-                    break;
-                case LibraryType.Unity:
-                    firstColor = new Color(0.40f, 0.10f, 0.30f);
-                    break;
-                case LibraryType.ThirdParty:
-                    firstColor = new Color(0.40f, 0.30f, 0.10f);
-                    break;
-                case LibraryType.ProjectShared:
-                    firstColor = new Color(0.30f, 0.40f, 0.10f);
-                    break;
-                case LibraryType.Project:
-                    firstColor = new Color(0.40f, 0.40f, 0.40f);
-                    break;
-                case LibraryType.ProjectEditor:
-                    firstColor = new Color(0.30f, 0.10f, 0.40f);
-                    break;
-                default:
-                    firstColor = new Color(0.10f, 0.30f, 0.30f);
-                    break;
+                foreach (Config.ColorHighlight colorHighlight in config.colorHighlights)
+                {
+                    if (IsIn(library.name, colorHighlight.libraries) == true)
+                    {
+                        firstColor = colorHighlight.color;
+                        break;
+                    }
+                }
             }
 
             return $"#{ColorUtility.ToHtmlStringRGB(firstColor)}/{ColorUtility.ToHtmlStringRGB(secondColor)}";
+        }
+
+        private static Color GetLibraryTypeColor(LibraryType libraryType)
+        {
+            switch (libraryType)
+            {
+                case LibraryType.Self:
+                    return new Color(0.10f, 0.30f, 0.40f);
+                case LibraryType.Unity:
+                    return new Color(0.40f, 0.10f, 0.30f);
+                case LibraryType.ThirdParty:
+                    return new Color(0.40f, 0.30f, 0.10f);
+                case LibraryType.ProjectShared:
+                    return new Color(0.30f, 0.40f, 0.10f);
+                case LibraryType.Project:
+                    return new Color(0.40f, 0.40f, 0.40f);
+                case LibraryType.ProjectEditor:
+                    return new Color(0.30f, 0.10f, 0.40f);
+                default:
+                    return new Color(0.10f, 0.30f, 0.30f);
+            }
+        }
+
+        private static bool IsIn(string searchString, string[] searchIn)
+        {
+            return searchIn != null && Array.Exists(searchIn, x => x == searchString);
         }
 
         private static string GetPathToUMLFile()
