@@ -134,7 +134,7 @@ namespace UnityTools.Editor
             {
                 foreach (string hiddenAssembly in config.hiddenAssemblies)
                 {
-                    umlDocument.AppendLine("remove " + hiddenAssembly.GetAssemblyType());
+                    umlDocument.AppendLine("remove " + hiddenAssembly.FormatAssemblyName());
                 }
             }
         }
