@@ -134,7 +134,7 @@ namespace UnityTools.Editor
             {
                 foreach (string hiddenAssembly in config.hiddenAssemblies)
                 {
-                    umlDocument.AppendLine("remove " + hiddenAssembly);
+                    umlDocument.AppendLine("remove " + hiddenAssembly.GetAssemblyType());
                 }
             }
         }
@@ -147,11 +147,15 @@ namespace UnityTools.Editor
 
         private static string FormatAssemblyName(this Assembly assembly) => assembly.GetName().FormatAssemblyName();
 
-        private static string FormatAssemblyName(this AssemblyName assemblyName) => $"{assemblyName.GetAssemblyType()}." + assemblyName.Name.Replace(" ", "_").Replace("-", "_").Replace(".", "_");
+        private static string FormatAssemblyName(this AssemblyName assemblyName) => assemblyName.Name.FormatAssemblyName();
+
+        private static string FormatAssemblyName(this string assemblyName) => $"{assemblyName.GetAssemblyType()}." + assemblyName.Replace(" ", "_").Replace("-", "_").Replace(".", "_");
 
         private static AssemblyType GetAssemblyType(this Assembly assembly) => assembly.GetName().GetAssemblyType();
 
-        private static AssemblyType GetAssemblyType(this AssemblyName assemblyName)
+        private static AssemblyType GetAssemblyType(this AssemblyName assemblyName) => assemblyName.Name.GetAssemblyType();
+
+        private static AssemblyType GetAssemblyType(this string assemblyName)
         {
             if (assemblyName.IsInArray(config.unityAssemblies)) return AssemblyType.Unity;
             if (assemblyName.IsInArray(config.thirdPartyAssemblies)) return AssemblyType.ThirdParty;
@@ -222,14 +226,10 @@ namespace UnityTools.Editor
             }
         }
 
-        private static bool IsInArray(this AssemblyName assemblyName, string[] searchIn)
-        {
-            return searchIn != null && Array.Exists(searchIn, x => x == assemblyName.Name);
-        }
+        private static bool IsInArray(this AssemblyName assemblyName, string[] searchIn) => assemblyName.Name.IsInArray(searchIn);
 
-        private static string GetPathToUMLFile()
-        {
-            return Path.Combine(Application.dataPath, "../architecture.plantuml");
-        }
+        private static bool IsInArray(this string text, string[] searchIn) => searchIn != null && Array.Exists(searchIn, x => x == text);
+
+        private static string GetPathToUMLFile() => Path.Combine(Application.dataPath, "../architecture.plantuml");
     }
 }
