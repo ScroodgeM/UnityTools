@@ -147,7 +147,7 @@ namespace UnityTools.Editor
 
         private static string FormatAssemblyName(this Assembly assembly) => assembly.GetName().FormatAssemblyName();
 
-        private static string FormatAssemblyName(this AssemblyName assemblyName) => $"{assemblyName.GetAssemblyType()}." + assemblyName.Name.Replace("-", "_").Replace(".", "_");
+        private static string FormatAssemblyName(this AssemblyName assemblyName) => $"{assemblyName.GetAssemblyType()}." + assemblyName.Name.Replace(" ", "_").Replace("-", "_").Replace(".", "_");
 
         private static AssemblyType GetAssemblyType(this Assembly assembly) => assembly.GetName().GetAssemblyType();
 
