@@ -1,16 +1,20 @@
 using System;
-using UnityEngine;
-using UnityEditor;
+using System.Collections.Generic;
 using System.IO;
 using System.Diagnostics;
-using System.Collections.Generic;
-using UnityEditorInternal;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Text;
+using UnityEngine;
+using UnityEditor;
 
 namespace UnityTools.Editor
 {
     public static class LibraryReferencesUmlGenerator
     {
-        private enum LibraryType : byte
+        private const string UnityCoreModuleAssemblyName = "UnityEngine.CoreModule";
+
+        private enum AssemblyType : byte
         {
             Self = 3,
             Unity = 10,
@@ -22,35 +26,27 @@ namespace UnityTools.Editor
         }
 
         [Serializable]
-        private struct AsmDefStructure
-        {
-            public string name;
-            public string[] references;
-            public bool autoReferenced;
-            public bool noEngineReferences;
-        }
-
-        [Serializable]
         private struct Config
         {
             [Serializable]
             public struct ColorHighlight
             {
                 public Color color;
-                public string[] libraries;
+                public string[] assemblies;
             }
 
-            public string[] unityLibraries;
-            public string[] thirdPartyLibraries;
-            public string[] thirdPartyEditorLibraries;
-            public string[] projectSharedLibraries;
-            public string[] projectEditorLibraries;
+            public string[] unityAssemblies;
+            public string[] thirdPartyAssemblies;
+            public string[] thirdPartyEditorAssemblies;
+            public string[] projectSharedAssemblies;
+            public string[] projectEditorAssemblies;
+            public string[] hiddenAssemblies;
             public ColorHighlight[] colorHighlights;
         }
 
         private static Config config;
 
-        private static readonly string[] selfLibraries = new string[]
+        private static readonly string[] selfAssemblies = new string[]
         {
             "com.Scroodge.UnityTools.Editor",
             "com.Scroodge.UnityTools.Runtime",
@@ -58,7 +54,7 @@ namespace UnityTools.Editor
             "com.Scroodge.UnityTools.Examples",
         };
 
-        [MenuItem(nameof(UnityTools) + "/Generate UML with library references and open it in browser")]
+        [MenuItem(nameof(UnityTools) + "/Generate UML with assembly references and open it in browser")]
         private static void GenerateUMLAndOpenItInBrowser()
         {
             GenerateUML();
@@ -66,37 +62,33 @@ namespace UnityTools.Editor
             Process.Start("chrome.exe", $"--allow-file-access-from-files file://{GetPathToUMLFile()}");
         }
 
-        [MenuItem(nameof(UnityTools) + "/Generate UML with library references")]
+        [MenuItem(nameof(UnityTools) + "/Generate UML with assembly references")]
         private static void GenerateUML()
         {
-            FillSharedLibraries();
+            ReadConfig();
 
-            string umlDocument = "";
+            StringBuilder umlDocument = new StringBuilder();
 
-            umlDocument += "@startuml" + Environment.NewLine;
+            umlDocument.AppendLine("@startuml");
 
-            umlDocument += "scale max 1920*1080" + Environment.NewLine;
+            umlDocument.AppendLine("scale max 1920*1080");
 
-            umlDocument += "!theme crt-green" + Environment.NewLine;
+            umlDocument.AppendLine("!theme crt-green");
 
-            umlDocument += Environment.NewLine;
+            umlDocument.AppendLine();
 
-            List<AsmDefStructure> asmDefs = new List<AsmDefStructure>();
+            CreateUml(System.AppDomain.CurrentDomain.GetAssemblies(), ref umlDocument);
 
-            ParseDirectory(Application.dataPath, ref asmDefs);
+            umlDocument.AppendLine();
 
-            CreateUml(asmDefs, ref umlDocument);
+            umlDocument.AppendLine("@enduml");
 
-            umlDocument += Environment.NewLine;
-
-            umlDocument += "@enduml" + Environment.NewLine;
-
-            File.WriteAllText(GetPathToUMLFile(), umlDocument);
+            File.WriteAllText(GetPathToUMLFile(), umlDocument.ToString());
 
             UnityEngine.Debug.Log("Generation success");
         }
 
-        private static void FillSharedLibraries()
+        private static void ReadConfig()
         {
             string pathToConfig = Path.Combine(Application.dataPath, "uml_generator_config.json");
 
@@ -105,129 +97,89 @@ namespace UnityTools.Editor
             File.WriteAllText(pathToConfig, JsonUtility.ToJson(config, true));
         }
 
-        private static void ParseDirectory(string directoryPath, ref List<AsmDefStructure> asmDefs)
+        private static void CreateUml(Assembly[] assemblies, ref StringBuilder umlDocument)
         {
-            foreach (string filePath in Directory.GetFiles(directoryPath))
+            List<Assembly> assembliesSorted = new List<Assembly>(assemblies);
+
+            assembliesSorted.Sort((a, b) => a.FormatAssemblyName().CompareTo(b.FormatAssemblyName()));
+
+            for (int i = 0; i < assembliesSorted.Count; i++)
             {
-                if (filePath.EndsWith(".asmdef"))
+                Assembly assembly = assembliesSorted[i];
+
+                bool hasEngineReferences = assembly.HasEngineReferences();
+
+                umlDocument.AppendLine($"class {assembly.FormatAssemblyName()} {assembly.GetAssemblyColor(hasEngineReferences)} {{");
+
+                umlDocument.AppendLine(GetAssemblyBody(assembly));
+
+                umlDocument.AppendLine("}");
+
+                umlDocument.AppendLine();
+
+                foreach (AssemblyName reference in assembly.GetReferencedAssemblies())
                 {
-                    asmDefs.Add(JsonUtility.FromJson<AsmDefStructure>(File.ReadAllText(filePath)));
-                }
-            }
-
-            foreach (string subdirectoryPath in Directory.GetDirectories(directoryPath))
-            {
-                ParseDirectory(subdirectoryPath, ref asmDefs);
-            }
-        }
-
-        private static void CreateUml(List<AsmDefStructure> asmDefs, ref string umlDocument)
-        {
-            asmDefs = new List<AsmDefStructure>(asmDefs);
-            asmDefs.Sort((a, b) => a.name.FormatAsmDefName().CompareTo(b.name.FormatAsmDefName()));
-
-            for (int i = 0; i < asmDefs.Count; i++)
-            {
-                AsmDefStructure asmDef = asmDefs[i];
-
-                umlDocument += $"class {asmDef.name.FormatAsmDefName()} {GetLibraryColor(asmDef)} {{{Environment.NewLine}";
-
-                umlDocument += GetLibraryBody(asmDef) + Environment.NewLine;
-
-                umlDocument += "}" + Environment.NewLine;
-
-                umlDocument += Environment.NewLine;
-
-                if (asmDef.references != null)
-                {
-                    foreach (string reference in asmDef.references)
+                    if (assembliesSorted.Exists(x => x.GetName().Name == reference.Name) == false)
                     {
-                        string referencedAssemblyDefinitionName;
+                        assembliesSorted.Add(CreateAssemblyFromName(reference));
+                    }
 
-                        const string guidHeader = "GUID:";
-                        if (reference.StartsWith(guidHeader) == true)
-                        {
-                            string asmDefPath = AssetDatabase.GUIDToAssetPath(reference.Substring(guidHeader.Length));
-                            if (string.IsNullOrEmpty(asmDefPath) == false)
-                            {
-                                AssemblyDefinitionAsset assemblyDefinition = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(asmDefPath);
-                                referencedAssemblyDefinitionName = assemblyDefinition.name;
-                            }
-                            else
-                            {
-                                continue;
-                            }
-                        }
-                        else
-                        {
-                            referencedAssemblyDefinitionName = reference;
-                        }
-
-                        if (asmDefs.Exists(x => x.name == referencedAssemblyDefinitionName) == false)
-                        {
-                            asmDefs.Add(CreateAsmDefFromReference(referencedAssemblyDefinitionName));
-                        }
-
-                        if (GetLibraryType(referencedAssemblyDefinitionName) >= GetLibraryType(asmDef.name))
-                        {
-                            umlDocument += $"{referencedAssemblyDefinitionName.FormatAsmDefName()} <-- {asmDef.name.FormatAsmDefName()}{Environment.NewLine}";
-                        }
+                    if (reference.GetAssemblyType() >= assembly.GetAssemblyType())
+                    {
+                        umlDocument.AppendLine($"{reference.FormatAssemblyName()} <-- {assembly.FormatAssemblyName()}");
                     }
                 }
 
-                umlDocument += Environment.NewLine;
+                umlDocument.AppendLine();
             }
         }
 
-        private static AsmDefStructure CreateAsmDefFromReference(string name)
+        private static Assembly CreateAssemblyFromName(AssemblyName assemblyName)
         {
-            AsmDefStructure result;
-            result.name = name;
-            result.noEngineReferences = false;
-            result.autoReferenced = true;
-            result.references = Array.Empty<string>();
-            return result;
+            return AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.ReflectionOnly);
         }
 
-        private static string FormatAsmDefName(this string name) => $"{GetLibraryType(name)}." + name.Replace("-", "_").Replace(".", "_");
+        private static string FormatAssemblyName(this Assembly assembly) => assembly.GetName().FormatAssemblyName();
 
-        private static LibraryType GetLibraryType(string libraryName)
+        private static string FormatAssemblyName(this AssemblyName assemblyName) => $"{assemblyName.GetAssemblyType()}." + assemblyName.Name.Replace("-", "_").Replace(".", "_");
+
+        private static AssemblyType GetAssemblyType(this Assembly assembly) => assembly.GetName().GetAssemblyType();
+
+        private static AssemblyType GetAssemblyType(this AssemblyName assemblyName)
         {
-            if (IsIn(libraryName, config.unityLibraries)) return LibraryType.Unity;
-            if (IsIn(libraryName, config.thirdPartyLibraries)) return LibraryType.ThirdParty;
-            if (IsIn(libraryName, config.projectSharedLibraries)) return LibraryType.ProjectShared;
-            if (IsIn(libraryName, config.thirdPartyEditorLibraries)) return LibraryType.ThirdPartyEditor;
-            if (IsIn(libraryName, config.projectEditorLibraries)) return LibraryType.ProjectEditor;
-            if (IsIn(libraryName, selfLibraries)) return LibraryType.Self;
-            return LibraryType.Project;
+            if (assemblyName.IsInArray(config.unityAssemblies)) return AssemblyType.Unity;
+            if (assemblyName.IsInArray(config.thirdPartyAssemblies)) return AssemblyType.ThirdParty;
+            if (assemblyName.IsInArray(config.projectSharedAssemblies)) return AssemblyType.ProjectShared;
+            if (assemblyName.IsInArray(config.thirdPartyEditorAssemblies)) return AssemblyType.ThirdPartyEditor;
+            if (assemblyName.IsInArray(config.projectEditorAssemblies)) return AssemblyType.ProjectEditor;
+            if (assemblyName.IsInArray(selfAssemblies)) return AssemblyType.Self;
+            return AssemblyType.Project;
         }
 
-        private static string GetLibraryBody(AsmDefStructure library)
+        private static string GetAssemblyBody(Assembly assembly)
         {
-            string result = library.noEngineReferences ? "no Unity" : "uses Unity";
-
-            if (library.autoReferenced == true)
-            {
-                result += ", ";
-                result += "auto-referenced";
-            }
+            bool hasEngineReferences = Array.Exists(assembly.GetReferencedAssemblies(), x => x.Name == UnityCoreModuleAssemblyName);
+            string result = hasEngineReferences ? "uses Unity" : "no Unity";
 
             result += ", ";
-            result += GetLibraryType(library.name).ToString();
+            result += assembly.GetAssemblyType().ToString();
 
             return result;
         }
 
-        private static string GetLibraryColor(AsmDefStructure library)
-        {
-            Color secondColor = library.noEngineReferences ? new Color(0.05f, 0.20f, 0.05f) : new Color(0.20f, 0.05f, 0.05f);
+        private static string GetAssemblyColor(this Assembly assembly, bool hasEngineReferences) => assembly.GetName().GetAssemblyColor(hasEngineReferences);
 
-            Color firstColor = GetLibraryTypeColor(GetLibraryType(library.name));
+        private static string GetAssemblyColor(this AssemblyName assemblyName, bool hasEngineReferences)
+        {
+            Color secondColor = hasEngineReferences ? new Color(0.20f, 0.05f, 0.05f) : new Color(0.05f, 0.20f, 0.05f);
+
+            Color firstColor = assemblyName.GetAssemblyType().GetColor();
+
             if (config.colorHighlights != null)
             {
                 foreach (Config.ColorHighlight colorHighlight in config.colorHighlights)
                 {
-                    if (IsIn(library.name, colorHighlight.libraries) == true)
+                    if (assemblyName.IsInArray(colorHighlight.assemblies) == true)
                     {
                         firstColor = colorHighlight.color;
                         break;
@@ -238,30 +190,35 @@ namespace UnityTools.Editor
             return $"#{ColorUtility.ToHtmlStringRGB(firstColor)}/{ColorUtility.ToHtmlStringRGB(secondColor)}";
         }
 
-        private static Color GetLibraryTypeColor(LibraryType libraryType)
+        private static bool HasEngineReferences(this Assembly assembly)
         {
-            switch (libraryType)
+            return Array.Exists(assembly.GetReferencedAssemblies(), x => x.Name == UnityCoreModuleAssemblyName);
+        }
+
+        private static Color GetColor(this AssemblyType assemblyType)
+        {
+            switch (assemblyType)
             {
-                case LibraryType.Self:
+                case AssemblyType.Self:
                     return new Color(0.10f, 0.30f, 0.40f);
-                case LibraryType.Unity:
+                case AssemblyType.Unity:
                     return new Color(0.40f, 0.10f, 0.30f);
-                case LibraryType.ThirdParty:
+                case AssemblyType.ThirdParty:
                     return new Color(0.40f, 0.30f, 0.10f);
-                case LibraryType.ProjectShared:
+                case AssemblyType.ProjectShared:
                     return new Color(0.30f, 0.40f, 0.10f);
-                case LibraryType.Project:
+                case AssemblyType.Project:
                     return new Color(0.40f, 0.40f, 0.40f);
-                case LibraryType.ProjectEditor:
+                case AssemblyType.ProjectEditor:
                     return new Color(0.30f, 0.10f, 0.40f);
                 default:
                     return new Color(0.10f, 0.30f, 0.30f);
             }
         }
 
-        private static bool IsIn(string searchString, string[] searchIn)
+        private static bool IsInArray(this AssemblyName assemblyName, string[] searchIn)
         {
-            return searchIn != null && Array.Exists(searchIn, x => x == searchString);
+            return searchIn != null && Array.Exists(searchIn, x => x == assemblyName.Name);
         }
 
         private static string GetPathToUMLFile()
