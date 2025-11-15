@@ -79,7 +79,13 @@ namespace UnityTools.Editor
 
             umlDocument.AppendLine();
 
-            config.CreateUml(AppDomain.CurrentDomain.GetAssemblies(), ref umlDocument);
+            Assembly[] allAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+
+            allAssemblies = AddMissingAssemblies(allAssemblies);
+
+            config.CreateUml(allAssemblies, ref umlDocument);
+
+            config.Refresh(allAssemblies);
 
             umlDocument.AppendLine();
 
@@ -102,19 +108,29 @@ namespace UnityTools.Editor
             File.WriteAllText(GetPathToConfig(), JsonUtility.ToJson(config, true));
         }
 
-        private static void CreateUml(this Config config, Assembly[] assemblies, ref System.Text.StringBuilder umlDocument)
+        private static Assembly[] AddMissingAssemblies(Assembly[] allAssemblies)
         {
-            List<Assembly> assembliesSorted = new List<Assembly>(assemblies);
+            List<Assembly> result = new List<Assembly>(allAssemblies);
+
+            for (int i = 0; i < result.Count; i++)
+            {
+                foreach (AssemblyName reference in result[i].GetReferencedAssemblies())
+                {
+                    if (result.Exists(x => x.GetName().Name == reference.Name) == false)
+                    {
+                        result.Add(CreateAssemblyFromName(reference));
+                    }
+                }
+            }
+
+            return result.ToArray();
+        }
+
+        private static void CreateUml(this Config config, Assembly[] allAssemblies, ref System.Text.StringBuilder umlDocument)
+        {
+            List<Assembly> assembliesSorted = new List<Assembly>(allAssemblies);
 
             assembliesSorted.Sort((a, b) => config.FormatAssemblyName(a).CompareTo(config.FormatAssemblyName(b)));
-
-            HashSet<string> unusedAssemblies = new HashSet<string>();
-            HashSet<string> missingAssemblies = new HashSet<string>();
-
-            foreach (string mentionedAssembly in config.GetAllMentionedAssemblies())
-            {
-                unusedAssemblies.Add(mentionedAssembly);
-            }
 
             for (int i = 0; i < assembliesSorted.Count; i++)
             {
@@ -132,11 +148,6 @@ namespace UnityTools.Editor
 
                 foreach (AssemblyName reference in assembly.GetReferencedAssemblies())
                 {
-                    if (assembliesSorted.Exists(x => x.GetName().Name == reference.Name) == false)
-                    {
-                        assembliesSorted.Add(CreateAssemblyFromName(reference));
-                    }
-
                     if (config.GetAssemblyType(reference) >= config.GetAssemblyType(assembly))
                     {
                         umlDocument.AppendLine($"{config.FormatAssemblyName(reference)} <-- {config.FormatAssemblyName(assembly)}");
@@ -144,12 +155,6 @@ namespace UnityTools.Editor
                 }
 
                 umlDocument.AppendLine();
-
-                string assemblyName = assembly.GetName().Name;
-                if (unusedAssemblies.Remove(assemblyName) == false)
-                {
-                    missingAssemblies.Add(assemblyName);
-                }
             }
 
             if (config.hiddenAssemblies != null)
@@ -159,9 +164,35 @@ namespace UnityTools.Editor
                     umlDocument.AppendLine("remove " + config.FormatAssemblyName(hiddenAssembly));
                 }
             }
+        }
+
+        private static void Refresh(this Config config, Assembly[] allAssemblies)
+        {
+            HashSet<string> unusedAssemblies = new HashSet<string>();
+            foreach (string mentionedAssembly in config.GetAllMentionedAssemblies())
+            {
+                unusedAssemblies.Add(mentionedAssembly);
+            }
+
+            HashSet<string> missingAssemblies = new HashSet<string>();
+            foreach (Assembly assembly in allAssemblies)
+            {
+                string assemblyName = assembly.GetName().Name;
+                if (unusedAssemblies.Remove(assemblyName) == false)
+                {
+                    missingAssemblies.Add(assemblyName);
+                }
+            }
 
             config.outputUnusedAssemblies = new List<string>(unusedAssemblies).ToArray();
             config.outputMissingAssemblies = new List<string>(missingAssemblies).ToArray();
+
+            if (config.unityAssemblies != null) Array.Sort(config.unityAssemblies);
+            if (config.thirdPartyAssemblies != null) Array.Sort(config.thirdPartyAssemblies);
+            if (config.thirdPartyEditorAssemblies != null) Array.Sort(config.thirdPartyEditorAssemblies);
+            if (config.projectSharedAssemblies != null) Array.Sort(config.projectSharedAssemblies);
+            if (config.projectAssemblies != null) Array.Sort(config.projectAssemblies);
+            if (config.projectEditorAssemblies != null) Array.Sort(config.projectEditorAssemblies);
         }
 
         private static Assembly CreateAssemblyFromName(AssemblyName assemblyName)
