@@ -40,7 +40,7 @@ namespace UnityTools.Editor
             public string[] projectAssemblies;
             public string[] projectEditorAssemblies;
 
-            public string[] hiddenAssemblies;
+            public string[] hiddenProjects;
 
             public string[] outputUnusedAssemblies;
             public string[] outputMissingAssemblies;
@@ -157,11 +157,11 @@ namespace UnityTools.Editor
                 umlDocument.AppendLine();
             }
 
-            if (config.hiddenAssemblies != null)
+            if (config.hiddenProjects != null)
             {
-                foreach (string hiddenAssembly in config.hiddenAssemblies)
+                foreach (string hiddenProject in config.hiddenProjects)
                 {
-                    umlDocument.AppendLine("remove " + config.FormatAssemblyName(hiddenAssembly));
+                    umlDocument.AppendLine("remove " + hiddenProject);
                 }
             }
         }
