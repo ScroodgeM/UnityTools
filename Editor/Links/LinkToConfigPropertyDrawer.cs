@@ -1,8 +1,11 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using UnityTools.Runtime.Links;
+using UnityTools.UnityRuntime.Links;
 
 namespace UnityTools.Editor.Links
 {
@@ -13,7 +16,7 @@ namespace UnityTools.Editor.Links
 
         private static readonly Dictionary<string, List<string>> valuesBufferDict = new Dictionary<string, List<string>>();
 
-        protected static void DrawLink<T>(Rect position, SerializedProperty property, GUIContent label, string nameOfId) where T : Object
+        protected static void DrawLink<T>(Rect position, SerializedProperty property, GUIContent label, string nameOfId) where T : UnityEngine.Object
         {
             EditorGUI.BeginProperty(position, label, property);
             position = EditorGUI.PrefixLabel(position, GUIUtility.GetControlID(FocusType.Passive), label);
@@ -26,7 +29,7 @@ namespace UnityTools.Editor.Links
             EditorGUI.EndProperty();
         }
 
-        private static void DrawLinkToAssetGUI<T>(string nameOfId, Rect position, SerializedProperty property) where T : Object
+        private static void DrawLinkToAssetGUI<T>(string nameOfId, Rect position, SerializedProperty property) where T : UnityEngine.Object
         {
             if (property.hasMultipleDifferentValues == true)
             {
@@ -47,18 +50,9 @@ namespace UnityTools.Editor.Links
 
             T assetValue = GetAsset<T>(nameOfId, property);
 
-            string currentDisplayValue;
-
             bool currentIsEmpty = currentValue == LinkBase.EmptyLinkKeyword;
 
-            if (currentIsEmpty)
-            {
-                currentDisplayValue = emptyLinkDisplayValue;
-            }
-            else
-            {
-                currentDisplayValue = currentValue;
-            }
+            string currentDisplayValue = currentIsEmpty ? emptyLinkDisplayValue : currentValue;
 
             int currentValueIndex = valuesBuffer.IndexOf(currentDisplayValue);
 
@@ -82,7 +76,8 @@ namespace UnityTools.Editor.Links
             Color oldColor = GUI.color;
             GUI.color = valid ? GUI.color : Color.red;
 
-            currentValueIndex = EditorGUI.Popup(new Rect(x1, y, w1, h), currentValueIndex, valuesBuffer.ToArray());
+            string[] displayOptions = FilterIfNeeded(property, valuesBuffer);
+            currentValueIndex = EditorGUI.Popup(new Rect(x1, y, w1, h), currentValueIndex, displayOptions);
             if (currentValueIndex >= 0 && currentValueIndex < valuesBuffer.Count)
             {
                 if (valuesBuffer[currentValueIndex] == emptyLinkDisplayValue)
@@ -129,7 +124,7 @@ namespace UnityTools.Editor.Links
             }
         }
 
-        protected static T GetAsset<T>(string nameOfId, SerializedProperty property) where T : Object
+        protected static T GetAsset<T>(string nameOfId, SerializedProperty property) where T : UnityEngine.Object
         {
             string currentValue = property.FindPropertyRelative(nameOfId).stringValue;
 
@@ -198,6 +193,31 @@ namespace UnityTools.Editor.Links
             }
 
             return "*";
+        }
+
+        private static string[] FilterIfNeeded(SerializedProperty sourceProperty, List<string> values)
+        {
+            string[] result = values.ToArray();
+
+            FieldInfo fieldInfo =
+                sourceProperty
+                    .serializedObject
+                    .targetObject
+                    .GetType()
+                    .GetField(sourceProperty.name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            if (fieldInfo != null)
+            {
+                LinksDisplayFilterForInspectorAttribute filterAttribute =
+                    fieldInfo.GetCustomAttribute<LinksDisplayFilterForInspectorAttribute>();
+
+                if (filterAttribute != null)
+                {
+                    result = Array.FindAll(result, x => filterAttribute.filter(x));
+                }
+            }
+
+            return result;
         }
     }
 }
