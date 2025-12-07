@@ -28,6 +28,12 @@ namespace UnityTools.Editor.Links
 
         private static void DrawLinkToAssetGUI<T>(string nameOfId, Rect position, SerializedProperty property) where T : Object
         {
+            if (property.hasMultipleDifferentValues == true)
+            {
+                EditorGUI.LabelField(position, "Editing multiple different links at once not supported");
+                return;
+            }
+
             string currentValue = property.FindPropertyRelative(nameOfId).stringValue;
             string typeKey = typeof(T).FullName;
 
@@ -166,15 +172,30 @@ namespace UnityTools.Editor.Links
 
         internal static string GetExtension<T>()
         {
-            if (typeof(ScriptableObject).IsAssignableFrom(typeof(T))) { return "asset"; }
+            if (typeof(ScriptableObject).IsAssignableFrom(typeof(T)))
+            {
+                return "asset";
+            }
 
-            if (typeof(MonoBehaviour).IsAssignableFrom(typeof(T))) { return "prefab"; }
+            if (typeof(MonoBehaviour).IsAssignableFrom(typeof(T)))
+            {
+                return "prefab";
+            }
 
-            if (typeof(GameObject).IsAssignableFrom(typeof(T))) { return "prefab"; }
+            if (typeof(GameObject).IsAssignableFrom(typeof(T)))
+            {
+                return "prefab";
+            }
 
-            if (typeof(AudioClip).IsAssignableFrom(typeof(T))) { return "wav"; }
+            if (typeof(AudioClip).IsAssignableFrom(typeof(T)))
+            {
+                return "wav";
+            }
 
-            if (typeof(SceneAsset).IsAssignableFrom(typeof(T))) { return "unity"; }
+            if (typeof(SceneAsset).IsAssignableFrom(typeof(T)))
+            {
+                return "unity";
+            }
 
             return "*";
         }
