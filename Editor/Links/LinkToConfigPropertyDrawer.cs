@@ -14,9 +14,9 @@ namespace UnityTools.Editor.Links
         private const string emptyLinkDisplayValue = "No Link";
         private const string refreshCommandDisplayValue = "Refresh...";
 
-        private static readonly Dictionary<string, List<string>> valuesBufferDict = new Dictionary<string, List<string>>();
+        private readonly List<string> valuesBuffer = new List<string>();
 
-        protected static void DrawLink<T>(Rect position, SerializedProperty property, GUIContent label, string nameOfId) where T : UnityEngine.Object
+        protected void DrawLink<T>(Rect position, SerializedProperty property, GUIContent label, string nameOfId) where T : UnityEngine.Object
         {
             EditorGUI.BeginProperty(position, label, property);
             position = EditorGUI.PrefixLabel(position, GUIUtility.GetControlID(FocusType.Passive), label);
@@ -29,7 +29,7 @@ namespace UnityTools.Editor.Links
             EditorGUI.EndProperty();
         }
 
-        private static void DrawLinkToAssetGUI<T>(string nameOfId, Rect position, SerializedProperty property) where T : UnityEngine.Object
+        private void DrawLinkToAssetGUI<T>(string nameOfId, Rect position, SerializedProperty property) where T : UnityEngine.Object
         {
             if (property.hasMultipleDifferentValues == true)
             {
@@ -38,15 +38,11 @@ namespace UnityTools.Editor.Links
             }
 
             string currentValue = property.FindPropertyRelative(nameOfId).stringValue;
-            string typeKey = typeof(T).FullName;
 
-            if (valuesBufferDict.ContainsKey(typeKey) == false)
+            if (valuesBuffer.Count == 0)
             {
-                valuesBufferDict.Add(typeKey, new List<string>());
-                GetListOfAssets<T>(valuesBufferDict[typeKey], true);
+                GetListOfAssets<T>(valuesBuffer, true);
             }
-
-            List<string> valuesBuffer = valuesBufferDict[typeKey];
 
             T assetValue = GetAsset<T>(nameOfId, property);
 
@@ -76,7 +72,7 @@ namespace UnityTools.Editor.Links
             Color oldColor = GUI.color;
             GUI.color = valid ? GUI.color : Color.red;
 
-            string[] displayOptions = FilterIfNeeded<T>(property, valuesBuffer);
+            string[] displayOptions = FilterIfNeeded<T>(valuesBuffer);
             currentValueIndex = EditorGUI.Popup(new Rect(x1, y, w1, h), currentValueIndex, displayOptions);
             if (currentValueIndex >= 0 && currentValueIndex < valuesBuffer.Count)
             {
@@ -86,7 +82,7 @@ namespace UnityTools.Editor.Links
                 }
                 else if (valuesBuffer[currentValueIndex] == refreshCommandDisplayValue)
                 {
-                    valuesBufferDict.Clear();
+                    valuesBuffer.Clear();
                     Debug.Log("Links cache refreshed");
                 }
                 else
@@ -196,21 +192,11 @@ namespace UnityTools.Editor.Links
             return "*";
         }
 
-        private static string[] FilterIfNeeded<T>(SerializedProperty sourceProperty, List<string> values) where T : UnityEngine.Object
+        private string[] FilterIfNeeded<T>(List<string> values) where T : UnityEngine.Object
         {
             string[] result = values.ToArray();
 
-            Type propertyParentObjectType = sourceProperty.serializedObject.targetObject.GetType();
-
-            FieldInfo propertyFieldInfo = GetPropertyFieldInfo(sourceProperty);
-
-            if (propertyFieldInfo == null)
-            {
-                return result;
-            }
-
-            LinksDisplayFilterForInspectorAttribute filterAttribute =
-                propertyFieldInfo.GetCustomAttribute<LinksDisplayFilterForInspectorAttribute>();
+            LinksDisplayFilterForInspectorAttribute filterAttribute = fieldInfo.GetCustomAttribute<LinksDisplayFilterForInspectorAttribute>();
 
             if (filterAttribute == null)
             {
@@ -218,7 +204,7 @@ namespace UnityTools.Editor.Links
             }
 
             BindingFlags bindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-            MethodInfo filterMethod = propertyParentObjectType.GetMethod(filterAttribute.filterMethodName, bindingFlags);
+            MethodInfo filterMethod = fieldInfo.DeclaringType.GetMethod(filterAttribute.filterMethodName, bindingFlags);
 
             if (filterMethod == null)
             {
@@ -256,60 +242,6 @@ namespace UnityTools.Editor.Links
                 T asset = GetAsset<T>(value);
                 return (bool)filterMethod.Invoke(null, new[] { asset });
             }
-        }
-
-        private static FieldInfo GetPropertyFieldInfo(SerializedProperty sourceProperty)
-        {
-            string[] pathSegments = sourceProperty.propertyPath.Split('.');
-
-            FieldInfo fieldInfo = null;
-
-            Type currentType = sourceProperty.serializedObject.targetObject.GetType();
-
-            for (int i = 0; i < pathSegments.Length; i++)
-            {
-                string segment = pathSegments[i];
-
-                if (segment == "Array"
-                    &&
-                    pathSegments.Length > i + 1
-                    &&
-                    pathSegments[i + 1].StartsWith("data["))
-                {
-                    if (currentType.IsArray)
-                    {
-                        currentType = currentType.GetElementType();
-                    }
-                    else if (currentType.IsGenericType && currentType.GetGenericTypeDefinition() == typeof(List<>))
-                    {
-                        currentType = currentType.GetGenericArguments()[0];
-                    }
-
-                    i++;
-                    continue;
-                }
-
-                fieldInfo = currentType.GetField(segment, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-                if (fieldInfo == null)
-                {
-                    Type baseType = currentType.BaseType;
-                    while (baseType != null && fieldInfo == null)
-                    {
-                        fieldInfo = baseType.GetField(segment, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                        baseType = baseType.BaseType;
-                    }
-                }
-
-                if (fieldInfo == null)
-                {
-                    throw new InvalidOperationException($"FieldInfo for property '{sourceProperty.propertyPath}' could not be found");
-                }
-
-                currentType = fieldInfo.FieldType;
-            }
-
-            return fieldInfo;
         }
     }
 }
