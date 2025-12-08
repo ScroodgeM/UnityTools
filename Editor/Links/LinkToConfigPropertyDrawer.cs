@@ -74,20 +74,20 @@ namespace UnityTools.Editor.Links
 
             string[] displayOptions = FilterIfNeeded<T>(valuesBuffer);
             currentValueIndex = EditorGUI.Popup(new Rect(x1, y, w1, h), currentValueIndex, displayOptions);
-            if (currentValueIndex >= 0 && currentValueIndex < valuesBuffer.Count)
+            if (currentValueIndex >= 0 && currentValueIndex < displayOptions.Length)
             {
-                if (valuesBuffer[currentValueIndex] == emptyLinkDisplayValue)
+                if (displayOptions[currentValueIndex] == emptyLinkDisplayValue)
                 {
                     property.FindPropertyRelative(nameOfId).stringValue = LinkBase.EmptyLinkKeyword;
                 }
-                else if (valuesBuffer[currentValueIndex] == refreshCommandDisplayValue)
+                else if (displayOptions[currentValueIndex] == refreshCommandDisplayValue)
                 {
                     valuesBuffer.Clear();
                     Debug.Log("Links cache refreshed");
                 }
                 else
                 {
-                    property.FindPropertyRelative(nameOfId).stringValue = valuesBuffer[currentValueIndex];
+                    property.FindPropertyRelative(nameOfId).stringValue = displayOptions[currentValueIndex];
                 }
             }
 
