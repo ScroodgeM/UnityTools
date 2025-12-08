@@ -202,8 +202,7 @@ namespace UnityTools.Editor.Links
 
             Type propertyParentObjectType = sourceProperty.serializedObject.targetObject.GetType();
 
-            FieldInfo propertyFieldInfo = propertyParentObjectType
-                .GetField(sourceProperty.name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            FieldInfo propertyFieldInfo = GetPropertyFieldInfo(sourceProperty);
 
             if (propertyFieldInfo == null)
             {
@@ -249,9 +248,68 @@ namespace UnityTools.Editor.Links
 
             bool FilterCheck(string value)
             {
+                if (value == emptyLinkDisplayValue || value == refreshCommandDisplayValue)
+                {
+                    return true;
+                }
+
                 T asset = GetAsset<T>(value);
                 return (bool)filterMethod.Invoke(null, new[] { asset });
             }
+        }
+
+        private static FieldInfo GetPropertyFieldInfo(SerializedProperty sourceProperty)
+        {
+            string[] pathSegments = sourceProperty.propertyPath.Split('.');
+
+            FieldInfo fieldInfo = null;
+
+            Type currentType = sourceProperty.serializedObject.targetObject.GetType();
+
+            for (int i = 0; i < pathSegments.Length; i++)
+            {
+                string segment = pathSegments[i];
+
+                if (segment == "Array"
+                    &&
+                    pathSegments.Length > i + 1
+                    &&
+                    pathSegments[i + 1].StartsWith("data["))
+                {
+                    if (currentType.IsArray)
+                    {
+                        currentType = currentType.GetElementType();
+                    }
+                    else if (currentType.IsGenericType && currentType.GetGenericTypeDefinition() == typeof(List<>))
+                    {
+                        currentType = currentType.GetGenericArguments()[0];
+                    }
+
+                    i++;
+                    continue;
+                }
+
+                fieldInfo = currentType.GetField(segment, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+                if (fieldInfo == null)
+                {
+                    Type baseType = currentType.BaseType;
+                    while (baseType != null && fieldInfo == null)
+                    {
+                        fieldInfo = baseType.GetField(segment, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                        baseType = baseType.BaseType;
+                    }
+                }
+
+                if (fieldInfo == null)
+                {
+                    throw new InvalidOperationException($"FieldInfo for property '{sourceProperty.propertyPath}' could not be found");
+                }
+
+                currentType = fieldInfo.FieldType;
+            }
+
+            return fieldInfo;
         }
     }
 }
