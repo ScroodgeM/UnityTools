@@ -76,7 +76,7 @@ namespace UnityTools.Editor.Links
             Color oldColor = GUI.color;
             GUI.color = valid ? GUI.color : Color.red;
 
-            string[] displayOptions = FilterIfNeeded(property, valuesBuffer);
+            string[] displayOptions = FilterIfNeeded<T>(property, valuesBuffer);
             currentValueIndex = EditorGUI.Popup(new Rect(x1, y, w1, h), currentValueIndex, displayOptions);
             if (currentValueIndex >= 0 && currentValueIndex < valuesBuffer.Count)
             {
@@ -126,18 +126,19 @@ namespace UnityTools.Editor.Links
 
         protected static T GetAsset<T>(string nameOfId, SerializedProperty property) where T : UnityEngine.Object
         {
-            string currentValue = property.FindPropertyRelative(nameOfId).stringValue;
+            return GetAsset<T>(property.FindPropertyRelative(nameOfId).stringValue);
+        }
 
-            string assetPath = Path.Combine("Assets", LinkBase.GetResourcesPathForAsset<T>(), $"{currentValue}.{GetExtension<T>()}");
+        private static T GetAsset<T>(string assetObjectId) where T : UnityEngine.Object
+        {
+            string assetPath = Path.Combine("Assets", LinkBase.GetResourcesPathForAsset<T>(), $"{assetObjectId}.{GetExtension<T>()}");
 
             if (typeof(Component).IsAssignableFrom(typeof(T)))
             {
                 return AssetDatabase.LoadAssetAtPath<GameObject>(assetPath)?.GetComponent<T>();
             }
-            else
-            {
-                return AssetDatabase.LoadAssetAtPath<T>(assetPath);
-            }
+
+            return AssetDatabase.LoadAssetAtPath<T>(assetPath);
         }
 
         internal static void GetListOfAssets<T>(List<string> buffer, bool addCommands)
@@ -195,29 +196,62 @@ namespace UnityTools.Editor.Links
             return "*";
         }
 
-        private static string[] FilterIfNeeded(SerializedProperty sourceProperty, List<string> values)
+        private static string[] FilterIfNeeded<T>(SerializedProperty sourceProperty, List<string> values) where T : UnityEngine.Object
         {
             string[] result = values.ToArray();
 
-            FieldInfo fieldInfo =
-                sourceProperty
-                    .serializedObject
-                    .targetObject
-                    .GetType()
-                    .GetField(sourceProperty.name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            Type propertyParentObjectType = sourceProperty.serializedObject.targetObject.GetType();
 
-            if (fieldInfo != null)
+            FieldInfo propertyFieldInfo = propertyParentObjectType
+                .GetField(sourceProperty.name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            if (propertyFieldInfo == null)
             {
-                LinksDisplayFilterForInspectorAttribute filterAttribute =
-                    fieldInfo.GetCustomAttribute<LinksDisplayFilterForInspectorAttribute>();
-
-                if (filterAttribute != null)
-                {
-                    result = Array.FindAll(result, x => filterAttribute.filter(x));
-                }
+                return result;
             }
 
-            return result;
+            LinksDisplayFilterForInspectorAttribute filterAttribute =
+                propertyFieldInfo.GetCustomAttribute<LinksDisplayFilterForInspectorAttribute>();
+
+            if (filterAttribute == null)
+            {
+                return result;
+            }
+
+            BindingFlags bindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+            MethodInfo filterMethod = propertyParentObjectType.GetMethod(filterAttribute.filterMethodName, bindingFlags);
+
+            if (filterMethod == null)
+            {
+                throw new InvalidOperationException($"LinkFilter static method '{filterAttribute.filterMethodName}' could not be found");
+            }
+
+            ParameterInfo[] parameters = filterMethod.GetParameters();
+
+            if (parameters.Length != 1)
+            {
+                throw new InvalidOperationException($"LinkFilter method '{filterAttribute.filterMethodName}' should only have one parameter");
+            }
+
+            ParameterInfo parameter = parameters[0];
+
+            if (parameter.ParameterType != typeof(T))
+            {
+                throw new InvalidOperationException($"LinkFilter method '{filterAttribute.filterMethodName}' parameter type '{parameter.ParameterType.Name}' must be of type '{typeof(T).Name}'");
+            }
+
+            if (filterMethod.ReturnType != typeof(bool))
+            {
+                throw new InvalidOperationException($"LinkFilter method '{filterAttribute.filterMethodName}' should return a boolean");
+            }
+
+            return Array.FindAll(result, FilterCheck);
+
+            bool FilterCheck(string value)
+            {
+                T asset = GetAsset<T>(value);
+                return (bool)filterMethod.Invoke(null, new[] { asset });
+            }
         }
     }
 }
