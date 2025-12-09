@@ -14,7 +14,7 @@ namespace UnityTools.Editor.Links
         private const string emptyLinkDisplayValue = "No Link";
         private const string refreshCommandDisplayValue = "Refresh...";
 
-        private readonly List<string> valuesBuffer = new List<string>();
+        private readonly List<string> valuesCache = new List<string>();
 
         protected void DrawLink<T>(Rect position, SerializedProperty property, GUIContent label, string nameOfId) where T : UnityEngine.Object
         {
@@ -39,9 +39,10 @@ namespace UnityTools.Editor.Links
 
             string currentValue = property.FindPropertyRelative(nameOfId).stringValue;
 
-            if (valuesBuffer.Count == 0)
+            if (valuesCache.Count == 0)
             {
-                GetListOfAssets<T>(valuesBuffer, true);
+                GetListOfAssets<T>(valuesCache, true);
+                FilterValuesCacheIfNeeded<T>();
             }
 
             T assetValue = GetAsset<T>(nameOfId, property);
@@ -49,8 +50,6 @@ namespace UnityTools.Editor.Links
             bool currentIsEmpty = currentValue == LinkBase.EmptyLinkKeyword;
 
             string currentDisplayValue = currentIsEmpty ? emptyLinkDisplayValue : currentValue;
-
-            int currentValueIndex = valuesBuffer.IndexOf(currentDisplayValue);
 
             const float clearButtonWidth = 18f;
             const float showButtonWidth = 25f;
@@ -72,22 +71,24 @@ namespace UnityTools.Editor.Links
             Color oldColor = GUI.color;
             GUI.color = valid ? GUI.color : Color.red;
 
-            string[] displayOptions = FilterIfNeeded<T>(valuesBuffer);
-            currentValueIndex = EditorGUI.Popup(new Rect(x1, y, w1, h), currentValueIndex, displayOptions);
-            if (currentValueIndex >= 0 && currentValueIndex < displayOptions.Length)
+            int currentValueIndex = valuesCache.IndexOf(currentDisplayValue);
+
+            currentValueIndex = EditorGUI.Popup(new Rect(x1, y, w1, h), currentValueIndex, valuesCache.ToArray());
+
+            if (currentValueIndex >= 0 && currentValueIndex < valuesCache.Count)
             {
-                if (displayOptions[currentValueIndex] == emptyLinkDisplayValue)
+                if (valuesCache[currentValueIndex] == emptyLinkDisplayValue)
                 {
                     property.FindPropertyRelative(nameOfId).stringValue = LinkBase.EmptyLinkKeyword;
                 }
-                else if (displayOptions[currentValueIndex] == refreshCommandDisplayValue)
+                else if (valuesCache[currentValueIndex] == refreshCommandDisplayValue)
                 {
-                    valuesBuffer.Clear();
+                    valuesCache.Clear();
                     Debug.Log("Links cache refreshed");
                 }
                 else
                 {
-                    property.FindPropertyRelative(nameOfId).stringValue = displayOptions[currentValueIndex];
+                    property.FindPropertyRelative(nameOfId).stringValue = valuesCache[currentValueIndex];
                 }
             }
 
@@ -192,19 +193,22 @@ namespace UnityTools.Editor.Links
             return "*";
         }
 
-        private string[] FilterIfNeeded<T>(List<string> values) where T : UnityEngine.Object
+        private void FilterValuesCacheIfNeeded<T>() where T : UnityEngine.Object
         {
-            string[] result = values.ToArray();
-
             LinksDisplayFilterForInspectorAttribute filterAttribute = fieldInfo.GetCustomAttribute<LinksDisplayFilterForInspectorAttribute>();
 
             if (filterAttribute == null)
             {
-                return result;
+                return;
             }
 
-            BindingFlags bindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-            MethodInfo filterMethod = fieldInfo.DeclaringType.GetMethod(filterAttribute.filterMethodName, bindingFlags);
+            MethodInfo filterMethod =
+                fieldInfo
+                    .DeclaringType
+                    .GetMethod(
+                        filterAttribute.filterMethodName,
+                        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
+                    );
 
             if (filterMethod == null)
             {
@@ -230,17 +234,21 @@ namespace UnityTools.Editor.Links
                 throw new InvalidOperationException($"LinkFilter method '{filterAttribute.filterMethodName}' should return a boolean");
             }
 
-            return Array.FindAll(result, FilterCheck);
-
-            bool FilterCheck(string value)
+            for (int i = valuesCache.Count - 1; i >= 0; i--)
             {
+                string value = valuesCache[i];
+
                 if (value == emptyLinkDisplayValue || value == refreshCommandDisplayValue)
                 {
-                    return true;
+                    continue;
                 }
 
-                T asset = GetAsset<T>(value);
-                return (bool)filterMethod.Invoke(null, new[] { asset });
+                if ((bool)filterMethod.Invoke(null, new[] { GetAsset<T>(value) }) == true)
+                {
+                    continue;
+                }
+
+                valuesCache.RemoveAt(i);
             }
         }
     }
