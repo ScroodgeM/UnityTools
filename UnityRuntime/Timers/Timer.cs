@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 using UnityTools.Runtime.Promises;
 
@@ -8,21 +8,13 @@ namespace UnityTools.UnityRuntime.Timers
 {
     public class Timer : MonoBehaviour, ITimer
     {
-        private struct Awaiter
-        {
-            public double duration;
-            public double finishTime;
-            public bool timeIsUnscaled;
-            public bool dieWithUnityObject;
-            public UnityEngine.Object unityObjectToDieWith;
-            public Func<bool> additionalCondition;
-            public Action<float> progressCallback;
-            public Deferred resolver;
-        }
+        private static readonly Exception stopException = new OperationCanceledException();
 
         private readonly ConcurrentQueue<Awaiter> newAwaiters = new ConcurrentQueue<Awaiter>();
 
-        private readonly List<Awaiter> awaiters = new List<Awaiter>();
+        private readonly AwaitersPool awaitersPool = new AwaitersPool();
+
+        [ThreadStatic] private static uint nextTimerId;
 
         private static ITimer instance;
 
@@ -33,6 +25,7 @@ namespace UnityTools.UnityRuntime.Timers
                 if (instance == null)
                 {
                     GameObject timerGameObject = new GameObject("Timer");
+                    timerGameObject.hideFlags = HideFlags.HideAndDontSave;
                     DontDestroyOnLoad(timerGameObject);
                     instance = timerGameObject.AddComponent<Timer>();
                 }
@@ -45,35 +38,63 @@ namespace UnityTools.UnityRuntime.Timers
         {
             while (newAwaiters.TryDequeue(out Awaiter awaiter) == true)
             {
-                awaiters.Add(awaiter);
+                awaitersPool.AddToRotation(awaiter);
             }
 
-            for (int i = 0; i < awaiters.Count; i++)
+            for (int i = 0; i < awaitersPool.Length; i++)
             {
-                Awaiter candidate = awaiters[i];
+                Awaiter candidate = awaitersPool[i];
 
-                if (candidate.dieWithUnityObject == true && candidate.unityObjectToDieWith == null)
+                if (candidate.stopOnUnityObjectDestroyResult.HasValue == true
+                    &&
+                    candidate.stopOnUnityObjectDestroyReference == null
+                   )
                 {
-                    awaiters.RemoveAt(i);
+                    Deferred resolver = candidate.resolver;
+                    StopResult stopResult = candidate.stopOnUnityObjectDestroyResult.Value;
+
+                    awaitersPool.DisableAt(i);
                     i--;
 
-                    candidate.resolver.Reject(new OperationCanceledException());
+                    StopWithResult(resolver, stopResult);
+                    continue;
+                }
+
+                if (candidate.stopOnUnityObjectDisableResult.HasValue == true
+                    &&
+                    (
+                        candidate.stopOnUnityObjectDisableReference == null
+                        ||
+                        candidate.stopOnUnityObjectDisableReference.activeInHierarchy == false
+                    )
+                   )
+                {
+                    Deferred resolver = candidate.resolver;
+                    StopResult stopResult = candidate.stopOnUnityObjectDisableResult.Value;
+
+                    awaitersPool.DisableAt(i);
+                    i--;
+
+                    StopWithResult(resolver, stopResult);
                     continue;
                 }
 
                 if (GetTime(candidate.timeIsUnscaled) >= candidate.finishTime)
                 {
-                    if (candidate.additionalCondition == null || candidate.additionalCondition() == true)
+                    if (candidate.additionalSuccessCondition == null || candidate.additionalSuccessCondition() == true)
                     {
-                        awaiters.RemoveAt(i);
+                        Deferred resolver = candidate.resolver;
+                        Action<float> progressCallback = candidate.progressCallback;
+
+                        awaitersPool.DisableAt(i);
                         i--;
 
-                        if (candidate.progressCallback != null)
+                        if (progressCallback != null)
                         {
-                            candidate.progressCallback(1f);
+                            progressCallback(1f);
                         }
 
-                        candidate.resolver.Resolve();
+                        resolver.Resolve();
                         continue;
                     }
                 }
@@ -89,64 +110,87 @@ namespace UnityTools.UnityRuntime.Timers
             }
         }
 
-        public IPromise WaitOneFrame()
-        {
-            return Wait(true, 0.001);
-        }
+        public ITimerPromise WaitOneFrame() => Wait(true, 0.001);
 
-        public IPromise Wait(double seconds, Action<float> progressCallback = null)
-        {
-            return Wait(false, seconds, progressCallback);
-        }
+        public ITimerPromise Wait(double seconds, Action<float> progressCallback = null) => Wait(false, seconds, progressCallback);
 
-        public IPromise WaitUnscaled(double seconds, Action<float> progressCallback = null)
-        {
-            return Wait(true, seconds, progressCallback);
-        }
+        public ITimerPromise WaitUnscaled(double seconds, Action<float> progressCallback = null) => Wait(true, seconds, progressCallback);
 
-        public IPromise WaitForTrue(Func<bool> condition)
-        {
-            return Wait(true, 0.0, null, condition);
-        }
+        public ITimerPromise WaitForTrue(Func<bool> condition) => Wait(true, 0.0, null, condition);
 
-        public IPromise WaitForMainThread()
-        {
-            return Wait(true, 0.0);
-        }
+        public ITimerPromise WaitForMainThread() => Wait(true, 0.0);
 
         public IPromise UnityObjectWait(UnityEngine.Object unityObjectToDieWith, double seconds, Action<float> progressCallback = null)
         {
-            return Wait(false, seconds, progressCallback, null, true, unityObjectToDieWith);
+            return Wait(false, seconds, progressCallback, null)
+                .StopOnUnityObjectDestroy(unityObjectToDieWith, StopResult.Silently);
         }
 
         public IPromise UnityObjectWaitUnscaled(UnityEngine.Object unityObjectToDieWith, double seconds, Action<float> progressCallback = null)
         {
-            return Wait(true, seconds, progressCallback, null, true, unityObjectToDieWith);
+            return Wait(true, seconds, progressCallback, null)
+                .StopOnUnityObjectDestroy(unityObjectToDieWith, StopResult.Silently);
         }
 
         public IPromise UnityObjectWaitForTrue(UnityEngine.Object unityObjectToDieWith, Func<bool> condition)
         {
-            return Wait(true, 0.0, null, condition, true, unityObjectToDieWith);
+            return Wait(true, 0.0, null, condition)
+                .StopOnUnityObjectDestroy(unityObjectToDieWith, StopResult.Silently);
         }
 
-        private IPromise Wait(bool timeIsUnscaled, double seconds, Action<float> progressCallback = null, Func<bool> additionalCondition = null, bool dieWithUnityObject = false, UnityEngine.Object unityObjectToDieWith = null)
+        public void StopTimer(long timerId, StopResult stopResult)
         {
-            Awaiter awaiter;
+            for (int i = 0; i < awaitersPool.Length; i++)
+            {
+                Awaiter candidate = awaitersPool[i];
 
-            awaiter.duration = seconds;
-            awaiter.finishTime = GetTime(timeIsUnscaled) + seconds;
-            awaiter.timeIsUnscaled = timeIsUnscaled;
-            awaiter.additionalCondition = additionalCondition;
-            awaiter.progressCallback = progressCallback;
-            awaiter.resolver = Deferred.GetFromPool();
-            awaiter.dieWithUnityObject = dieWithUnityObject;
-            awaiter.unityObjectToDieWith = unityObjectToDieWith;
+                if (candidate.id == timerId)
+                {
+                    awaitersPool.DisableAt(i);
+                    StopWithResult(candidate.resolver, stopResult);
+                    break;
+                }
+            }
+        }
 
+        private ITimerPromise Wait(bool timeIsUnscaled, double seconds, Action<float> progressCallback = null, Func<bool> additionalSuccessCondition = null)
+        {
+            AwaiterStartData startData;
+
+            startData.id = nextTimerId | ((long)Thread.CurrentThread.ManagedThreadId << 32);
+            startData.duration = seconds;
+            startData.finishTime = GetTime(timeIsUnscaled) + seconds;
+            startData.timeIsUnscaled = timeIsUnscaled;
+            startData.additionalSuccessCondition = additionalSuccessCondition;
+            startData.progressCallback = progressCallback;
+
+            unchecked
+            {
+                nextTimerId++;
+            }
+
+            Awaiter awaiter = awaitersPool.GetOrCreateAwaiter(startData);
             newAwaiters.Enqueue(awaiter);
-
-            return awaiter.resolver;
+            return awaiter;
         }
 
         private static double GetTime(bool unscaled) => unscaled ? Time.realtimeSinceStartupAsDouble : Time.timeAsDouble;
+
+        private static void StopWithResult(Deferred deferred, StopResult result)
+        {
+            switch (result)
+            {
+                case StopResult.WithRejection:
+                    deferred.Reject(stopException);
+                    break;
+
+                case StopResult.WithResolving:
+                    deferred.Resolve();
+                    break;
+
+                case StopResult.Silently:
+                    break;
+            }
+        }
     }
 }
