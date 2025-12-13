@@ -25,7 +25,16 @@ namespace UnityTools.UnityRuntime.Cache
         internal DiskStorageBase(string cacheId, IUnityInvocations unityInvocations, DiskStorageSettings settings, string fileExtension)
         {
             this.settings = settings;
-            this.filePath = System.IO.Path.Combine(Application.persistentDataPath, $"{cacheId}.{fileExtension}");
+
+            string folderPath = Application.persistentDataPath;
+            if (string.IsNullOrEmpty(settings.customSubfolder) == false)
+            {
+                folderPath = System.IO.Path.Combine(folderPath, settings.customSubfolder);
+            }
+
+            System.IO.Directory.CreateDirectory(folderPath);
+
+            this.filePath = System.IO.Path.Combine(folderPath, $"{cacheId}.{fileExtension}");
 
             if (settings.useDedicatedThread == true)
             {
