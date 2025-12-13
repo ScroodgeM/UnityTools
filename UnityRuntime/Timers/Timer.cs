@@ -146,8 +146,10 @@ namespace UnityTools.UnityRuntime.Timers
 
                 if (candidate.id == timerId)
                 {
+                    Deferred resolver = candidate.resolver;
+
                     awaitersPool.DisableAt(i);
-                    StopWithResult(candidate.resolver, stopResult);
+                    StopWithResult(resolver, stopResult);
                     break;
                 }
             }
