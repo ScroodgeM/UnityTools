@@ -3,6 +3,7 @@ namespace UnityTools.UnityRuntime.Cache
     public interface ICacheManager
     {
         ICacheManager Init();
+        ICacheManager Init(DiskStorageSettings settings);
         ICacheStorage<T> GetCacheStorage<T>(bool rememberBetweenSessions);
     }
 

@@ -31,6 +31,12 @@ namespace UnityTools.UnityRuntime.Cache
             return this;
         }
 
+        public ICacheManager Init(DiskStorageSettings settings)
+        {
+            this.diskStorageSettings = settings;
+            return this;
+        }
+
         public ICacheStorage<T> GetCacheStorage<T>(bool rememberBetweenSessions)
         {
             string cacheId = typeof(T).FullName;
