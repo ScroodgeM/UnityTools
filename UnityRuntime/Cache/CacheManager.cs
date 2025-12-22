@@ -31,6 +31,12 @@ namespace UnityTools.UnityRuntime.Cache
             return this;
         }
 
+        public ICacheManager Init(string customSubfolder)
+        {
+            this.diskStorageSettings.customSubfolder = customSubfolder;
+            return this;
+        }
+
         public ICacheManager Init(DiskStorageSettings settings)
         {
             this.diskStorageSettings = settings;
