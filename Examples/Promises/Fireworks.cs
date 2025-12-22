@@ -117,12 +117,13 @@ namespace UnityTools.Examples.Promises
             Vector2 startAnchoredPosition = image.rectTransform.anchoredPosition;
             float duration = (goalAnchoredPosition - startAnchoredPosition).magnitude / RandomFromSpread(flySpeed, flySpeedSpread);
             return Timer.Instance
-                .UnityObjectWait(image, duration, progress =>
+                .Wait(duration, progress =>
                 {
                     float slowingDownProgress = 1f - (1f - progress) * (1f - progress);
                     Vector2 newPosition = Vector2.Lerp(startAnchoredPosition, goalAnchoredPosition, slowingDownProgress);
                     image.rectTransform.anchoredPosition = newPosition;
                 })
+                .StopOnUnityObjectDestroy(image, StopResult.Silently)
                 .Done(() => { image.rectTransform.anchoredPosition = goalAnchoredPosition; });
         }
 
@@ -136,7 +137,8 @@ namespace UnityTools.Examples.Promises
             float duration = RandomFromSpread(disappearDuration, disappearDurationSpread);
 
             return Timer.Instance
-                .UnityObjectWait(image, duration, progress => { image.color = Color.Lerp(startColor, endColor, progress); })
+                .Wait(duration, progress => { image.color = Color.Lerp(startColor, endColor, progress); })
+                .StopOnUnityObjectDestroy(image, StopResult.Silently)
                 .Done(() => { image.enabled = false; });
         }
 

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityTools.Runtime.Links;
@@ -16,6 +17,11 @@ namespace UnityTools.UnityRuntime.Links
 
         public TD GetByLink(TL link)
         {
+            if (string.IsNullOrEmpty(link.LinkedObjectId) == true)
+            {
+                throw new ArgumentNullException($"Attempt to load asset by link with no linked object id. Link type: {typeof(TL).Name}");
+            }
+
             if (useCache == false)
             {
                 return LoadFromResources(link);
@@ -37,7 +43,14 @@ namespace UnityTools.UnityRuntime.Links
 
         private TD LoadFromResources(TL link)
         {
-            return UnityEngine.Resources.Load<TD>(Path.Combine(LinkBase.GetPathForAssetInsideResources<TD>(), link.LinkedObjectId));
+            TD asset = UnityEngine.Resources.Load<TD>(Path.Combine(LinkBase.GetPathForAssetInsideResources<TD>(), link.LinkedObjectId));
+
+            if (asset == null)
+            {
+                throw new ArgumentException($"Attempt to load missing asset. Link type: {typeof(TL).Name}. Linked object: {link.LinkedObjectId}");
+            }
+
+            return asset;
         }
     }
 }
