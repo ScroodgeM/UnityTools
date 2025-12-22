@@ -17,7 +17,7 @@ namespace UnityTools.UnityRuntime.Links
 
         public TD GetByLink(TL link)
         {
-            if (string.IsNullOrEmpty(link.LinkedObjectId) == true)
+            if (LinkBase.HasValue(link) == false)
             {
                 throw new ArgumentNullException($"Attempt to load asset by link with no linked object id. Link type: {typeof(TL).Name}");
             }
