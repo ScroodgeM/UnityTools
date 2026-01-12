@@ -5,7 +5,9 @@ namespace UnityTools.UnityRuntime.UI.Element
 {
     public class ElementBase : MonoBehaviour
     {
+#if !UNITY_EDITOR
         private bool initialized = false;
+#endif
 
         private ElementAnimator elementAnimator;
 
@@ -19,7 +21,9 @@ namespace UnityTools.UnityRuntime.UI.Element
 #endif
 
             elementAnimator = GetComponent<ElementAnimator>();
+#if !UNITY_EDITOR
             initialized = true;
+#endif
         }
 
         public virtual IPromise SetVisible(bool visible)

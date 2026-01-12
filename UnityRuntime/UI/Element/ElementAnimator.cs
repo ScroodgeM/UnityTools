@@ -35,7 +35,9 @@ namespace UnityTools.UnityRuntime.UI.Element
         [SerializeField] private bool visibleByDefault = false;
         [SerializeField] protected bool unscaledTime = false;
 
+#if !UNITY_EDITOR
         private bool initialized = false;
+#endif
 
         private ElementAnimatorCustomDuration customDuration;
         private readonly List<AnimationBase> animations = new List<AnimationBase>();
@@ -65,7 +67,9 @@ namespace UnityTools.UnityRuntime.UI.Element
             animations.Clear();
             GetComponents(animations);
 
+#if !UNITY_EDITOR
             initialized = true;
+#endif
         }
 
         private void Awake()

@@ -16,7 +16,10 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
 
         internal IPromise LastStateAnimation => currentAnimationTask.HasValue ? currentAnimationTask.Value.completePromise : Deferred.Resolved();
 
+#if !UNITY_EDITOR
         private bool initialized = false;
+#endif
+
         private ElementAnimator elementAnimator;
         private float currentVisibilityState;
         private AnimationTask? currentAnimationTask;
@@ -82,8 +85,9 @@ namespace UnityTools.UnityRuntime.UI.Element.Animations
 #endif
             {
                 Initialize();
-
+#if !UNITY_EDITOR
                 initialized = true;
+#endif
             }
         }
 

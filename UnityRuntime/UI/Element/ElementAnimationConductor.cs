@@ -41,18 +41,20 @@ namespace UnityTools.UnityRuntime.UI.Element
         private IPromise WaitAndGoSelf(bool visible)
         {
             float delay = visible == true ? selfShowDelay : selfHideDelay;
-            IPromise delayPromise = unscaledTime == true
-                ? Timer.Instance.UnityObjectWaitUnscaled(this, delay)
-                : Timer.Instance.UnityObjectWait(this, delay);
+            ITimerPromise delayPromise = unscaledTime == true
+                ? Timer.Instance.WaitUnscaled(delay)
+                : Timer.Instance.Wait(delay);
+            delayPromise.StopOnUnityObjectDestroy(this, StopResult.WithRejection);
             return delayPromise.Then(() => base.SetVisible(visible));
         }
 
         private IPromise WaitAndGo(bool visible, OtherElement element)
         {
             float delay = visible == true ? element.showDelay : element.hideDelay;
-            IPromise delayPromise = unscaledTime == true
-                ? Timer.Instance.UnityObjectWaitUnscaled(this, delay)
-                : Timer.Instance.UnityObjectWait(this, delay);
+            ITimerPromise delayPromise = unscaledTime == true
+                ? Timer.Instance.WaitUnscaled(delay)
+                : Timer.Instance.Wait(delay);
+            delayPromise.StopOnUnityObjectDestroy(this, StopResult.WithRejection);
             return delayPromise.Then(() => element.element.SetVisible(visible));
         }
     }
