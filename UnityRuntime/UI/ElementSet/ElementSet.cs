@@ -20,7 +20,7 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
         {
             if (ValidateType<T>() == false)
             {
-                return default;
+                return null;
             }
 
             ElementSet<T> elementSet = new ElementSet<T>(this, element as T);
@@ -32,10 +32,22 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
         {
             if (ValidateType<T>() == false)
             {
-                return default;
+                return null;
             }
 
             ElementSetWithSelectableElements<T> elementSet = new ElementSetWithSelectableElements<T>(this, element as T);
+            OnUpdate += () => elementSet.ProcessUpdate();
+            return elementSet;
+        }
+
+        public ElementSetInfinite<T> TypedInfinite<T>(Vector2 elementSize, Vector2 elementStep) where T : ElementBase
+        {
+            if (ValidateType<T>() == false)
+            {
+                return null;
+            }
+
+            ElementSetInfinite<T> elementSet = new ElementSetInfinite<T>(this, element as T, elementSize, elementStep);
             OnUpdate += () => elementSet.ProcessUpdate();
             return elementSet;
         }
@@ -92,10 +104,8 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
 #endif
     }
 
-    public class ElementSet<T> where T : ElementBase
+    public class ElementSet<T> : ElementSetBase<T> where T : ElementBase
     {
-        public event Action<T> OnElementCreated = element => { };
-
         private struct DelayedInitializeUntilElementBecomesVisible
         {
             public T elementBase;
@@ -104,20 +114,11 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
             public Action<T, int> initializer;
         }
 
-        private readonly ElementSet elementSet;
-        private readonly Transform elementsHolder;
-        private readonly RectTransform visibleFrame;
-        private readonly T elementPrefab;
-
-        private readonly List<T> elementsList = new List<T>();
         private readonly List<DelayedInitializeUntilElementBecomesVisible> delayedInitializes = new List<DelayedInitializeUntilElementBecomesVisible>();
 
         public ElementSet(ElementSet elementSet, T elementPrefab)
+            : base(elementSet, elementPrefab)
         {
-            this.elementSet = elementSet;
-            this.elementsHolder = elementSet.transform as RectTransform;
-            this.visibleFrame = elementSet.GetVisibleFrame();
-            this.elementPrefab = elementPrefab;
         }
 
         public IEnumerable<T> ActiveElements
@@ -140,7 +141,7 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
             elementsHolder.GetComponentsInChildren(true, elementsList);
         }
 
-        public void Init(int count, Action<T, int> initializer = null)
+        public override void Init(int count, Action<T, int> initializer = null)
         {
             delayedInitializes.Clear();
 
@@ -179,11 +180,6 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
             }
         }
 
-        public void Clear()
-        {
-            Init(0);
-        }
-
         public T GetElement(int index)
         {
             return index < elementsList.Count && index >= 0 ? elementsList[index] : default;
@@ -212,14 +208,6 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
                 delayedInitializes.RemoveAt(i);
                 break;
             }
-        }
-
-        private void AddNew()
-        {
-            T element = UnityEngine.Object.Instantiate(elementPrefab, elementsHolder, false);
-            element.gameObject.hideFlags = HideFlags.DontSave;
-            elementsList.Add(element);
-            OnElementCreated(element);
         }
     }
 }

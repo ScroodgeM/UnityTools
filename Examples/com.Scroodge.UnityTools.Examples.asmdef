@@ -2,8 +2,9 @@
     "name": "com.Scroodge.UnityTools.Examples",
     "rootNamespace": "UnityTools",
     "references": [
-        "GUID:a27d86e5631b0bd4db783c0ddfbdc353",
-        "GUID:e67b6f0445134784cb5c541bb8b6a89a"
+        "com.Scroodge.UnityTools.Runtime",
+        "com.Scroodge.UnityTools.UnityRuntime",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
