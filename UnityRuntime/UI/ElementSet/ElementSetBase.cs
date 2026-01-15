@@ -26,7 +26,21 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
 
         public abstract void Init(int count, Action<T, int> initializer = null);
 
+        public void AddAllChildElementsToTheList()
+        {
+            elementsList.Clear();
+            elementsHolder.GetComponentsInChildren(true, elementsList);
+        }
+
         public void Clear() => Init(0);
+
+        public void SetAsLastSibling()
+        {
+            foreach (T element in elementsList)
+            {
+                element.transform.SetAsLastSibling();
+            }
+        }
 
         protected T AddNew()
         {

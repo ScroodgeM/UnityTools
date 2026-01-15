@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityTools.UnityRuntime.Helpers;
 using UnityTools.UnityRuntime.UI.Element;
@@ -11,6 +10,7 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
         private readonly Vector2 elementSize;
         private readonly Vector2 elementStep;
 
+        private bool elementsLoopIsActive = false;
         private Action<T, int> initializerCache;
         private int firstElementIndex = 0;
         private int totalElementsCount = 0;
@@ -22,40 +22,43 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
             this.elementStep = elementStep;
         }
 
-        public void AddAllChildElementsToTheList()
-        {
-            elementsList.Clear();
-            elementsHolder.GetComponentsInChildren(true, elementsList);
-        }
-
         public override void Init(int count, Action<T, int> initializer = null)
         {
             this.initializerCache = initializer;
             this.firstElementIndex = 0;
             this.totalElementsCount = count;
 
-            if (elementsList.Count == 0 && count > 0)
-            {
-                AddNew();
-                Reinit(0);
-            }
-
             elementsHolder.anchorMin = Vector2.up;
             elementsHolder.anchorMax = Vector2.up;
             elementsHolder.pivot = Vector2.up;
             elementsHolder.sizeDelta = elementSize + elementStep * (count - 1);
-        }
 
-        public void SetAsLastSibling()
-        {
-            foreach (T element in elementsList)
+            if (elementsList.Count == 0 && count > 0)
             {
-                element.transform.SetAsLastSibling();
+                AddNew();
             }
+
+            int elementsCountToInit = Mathf.Min(count, elementsList.Count);
+            for (int i = 0; i < elementsCountToInit; i++)
+            {
+                Reinit(i);
+            }
+
+            for (int i = count; i < elementsList.Count; i++)
+            {
+                elementsList[i].SetVisible(false);
+            }
+
+            elementsLoopIsActive = count > elementsList.Count;
         }
 
         internal void ProcessUpdate()
         {
+            if (elementsLoopIsActive == false)
+            {
+                return;
+            }
+
             bool middleElementIsVisible =
                 (elementsList[elementsList.Count / 2].transform as RectTransform).Overlaps(visibleFrame) == true;
 
@@ -82,35 +85,24 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
                 return;
             }
 
-            bool hasInvisibleElementOnLeftSide =
-                (elementsList[0].transform as RectTransform).Overlaps(visibleFrame) == false;
-
-            bool canTakeElementOnLeftSide =
-                elementsList.Count > 2
-                &&
-                (elementsList[1].transform as RectTransform).Overlaps(visibleFrame) == false;
-
             bool requiredElementOnLeftSide =
-                hasInvisibleElementOnLeftSide == false
+                (elementsList[0].transform as RectTransform).Overlaps(visibleFrame)
                 &&
                 firstElementIndex > 0;
 
-            bool hasInvisibleElementOnRightSide =
-                (elementsList[^1].transform as RectTransform).Overlaps(visibleFrame) == false;
-
-            bool canTakeElementOnRightSide =
-                elementsList.Count > 2
-                &&
-                (elementsList[^2].transform as RectTransform).Overlaps(visibleFrame) == false;
-
             bool requiredElementOnRightSide =
-                hasInvisibleElementOnRightSide == false
+                (elementsList[^1].transform as RectTransform).Overlaps(visibleFrame)
                 &&
                 firstElementIndex + elementsList.Count < totalElementsCount;
 
             if (requiredElementOnLeftSide == true)
             {
                 int lastElementIndex = elementsList.Count - 1;
+
+                bool canTakeElementOnRightSide =
+                    elementsList.Count > 2
+                    &&
+                    (elementsList[^2].transform as RectTransform).Overlaps(visibleFrame) == false;
 
                 if (canTakeElementOnRightSide == true)
                 {
@@ -122,6 +114,8 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
                 {
                     AddNewFromStart();
                     this.firstElementIndex--;
+
+                    elementsLoopIsActive = totalElementsCount > elementsList.Count;
                 }
 
                 Reinit(0);
@@ -129,6 +123,11 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
             else if (requiredElementOnRightSide == true)
             {
                 int lastElementIndex = elementsList.Count - 1;
+
+                bool canTakeElementOnLeftSide =
+                    elementsList.Count > 2
+                    &&
+                    (elementsList[1].transform as RectTransform).Overlaps(visibleFrame) == false;
 
                 if (canTakeElementOnLeftSide == true)
                 {
@@ -140,6 +139,8 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
                 {
                     AddNew();
                     lastElementIndex++;
+
+                    elementsLoopIsActive = totalElementsCount > elementsList.Count;
                 }
 
                 Reinit(lastElementIndex);
@@ -149,6 +150,7 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
         private void Reinit(int elementIndex)
         {
             T element = elementsList[elementIndex];
+            element.SetVisible(true);
 
             int globalElementIndex = elementIndex + firstElementIndex;
 

@@ -135,12 +135,6 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
             }
         }
 
-        public void AddAllChildElementsToTheList()
-        {
-            elementsList.Clear();
-            elementsHolder.GetComponentsInChildren(true, elementsList);
-        }
-
         public override void Init(int count, Action<T, int> initializer = null)
         {
             delayedInitializes.Clear();
@@ -183,14 +177,6 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
         public T GetElement(int index)
         {
             return index < elementsList.Count && index >= 0 ? elementsList[index] : default;
-        }
-
-        public void SetAsLastSibling()
-        {
-            foreach (T element in elementsList)
-            {
-                element.transform.SetAsLastSibling();
-            }
         }
 
         internal void ProcessUpdate()
