@@ -5,16 +5,14 @@ namespace UnityTools.Examples.ElementSetInfinite
 {
     public class NumberedList : MonoBehaviour
     {
-        [SerializeField] private ElementSet elementSet;
-        [SerializeField] private Vector2 elementSize;
-        [SerializeField] private Vector2 elementStep;
+        [SerializeField] private UnityTools.UnityRuntime.UI.ElementSet.ElementSetInfinite elementSet;
         [SerializeField] private int elementsCount;
 
         private ElementSetInfinite<NumberedElement> elementSetInfinite;
 
         private void Awake()
         {
-            elementSetInfinite = elementSet.TypedInfinite<NumberedElement>(elementSize, elementStep);
+            elementSetInfinite = elementSet.TypedInfinite<NumberedElement>();
         }
 
         private void Start()

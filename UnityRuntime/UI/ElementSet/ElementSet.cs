@@ -10,9 +10,9 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
     {
         internal bool DelayInitializeUntilElementBecomesVisible => delayInitializeUntilElementBecomesVisible;
 
-        private event Action OnUpdate = () => { };
+        protected event Action OnUpdate = () => { };
 
-        [SerializeField] private ElementBase element;
+        [SerializeField] protected ElementBase element;
         [SerializeField] private bool delayInitializeUntilElementBecomesVisible = false;
         [SerializeField] private RectTransform customVisibleFrame;
 
@@ -40,18 +40,6 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
             return elementSet;
         }
 
-        public ElementSetInfinite<T> TypedInfinite<T>(Vector2 elementSize, Vector2 elementStep) where T : ElementBase
-        {
-            if (ValidateType<T>() == false)
-            {
-                return null;
-            }
-
-            ElementSetInfinite<T> elementSet = new ElementSetInfinite<T>(this, element as T, elementSize, elementStep);
-            OnUpdate += () => elementSet.ProcessUpdate();
-            return elementSet;
-        }
-
         internal RectTransform GetVisibleFrame()
         {
             if (customVisibleFrame != null)
@@ -67,7 +55,7 @@ namespace UnityTools.UnityRuntime.UI.ElementSet
             OnUpdate();
         }
 
-        private bool ValidateType<T>()
+        protected bool ValidateType<T>()
         {
             if (element == null)
             {
