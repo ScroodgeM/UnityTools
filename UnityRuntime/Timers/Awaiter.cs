@@ -46,6 +46,8 @@ namespace UnityTools.UnityRuntime.Timers
 
         public IPromise Then(Func<IPromise> next) => resolver.Then(next);
 
+        public IPromise<TNext> Then<TNext>(Func<IPromise<TNext>> next) => resolver.Then(next);
+
         public ITimerPromise StopNow(StopResult stopResult)
         {
             startData.finishTime = double.MinValue;

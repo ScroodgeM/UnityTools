@@ -4,7 +4,7 @@ using System.Collections.Concurrent;
 
 namespace UnityTools.Runtime.Promises
 {
-    public class Deferred : BaseDeferred, IPromise
+    public class Deferred : BaseDeferred
     {
         private static ConcurrentQueue<Deferred> poolQueue = new ConcurrentQueue<Deferred>();
 
@@ -264,6 +264,22 @@ namespace UnityTools.Runtime.Promises
             }
 
             return this;
+        }
+
+        public IPromise<TNext> Then<TNext>(Func<T, IPromise<TNext>> next)
+        {
+            Deferred<TNext> deferred = Deferred<TNext>.GetFromPool();
+
+            Done(() =>
+            {
+                next(result)
+                    .Done(nextResult => deferred.Resolve(nextResult))
+                    .Fail(ex => deferred.Reject(ex));
+            });
+
+            Fail(ex => deferred.Reject(ex));
+
+            return deferred;
         }
     }
 }

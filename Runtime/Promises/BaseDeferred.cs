@@ -83,6 +83,22 @@ namespace UnityTools.Runtime.Promises
             return deferred;
         }
 
+        public IPromise<TNext> Then<TNext>(Func<IPromise<TNext>> next)
+        {
+            Deferred<TNext> deferred = Deferred<TNext>.GetFromPool();
+
+            Done(() =>
+            {
+                next()
+                    .Done(nextResult => deferred.Resolve(nextResult))
+                    .Fail(ex => deferred.Reject(ex));
+            });
+
+            Fail(ex => deferred.Reject(ex));
+
+            return deferred;
+        }
+
         protected virtual void ClearCallbacks()
         {
             DoneCallbacks.Clear();
